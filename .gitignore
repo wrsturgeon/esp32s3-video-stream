@@ -1,0 +1,8 @@
+**.lock
+**/sdkconfig
+
+**/.DS_Store
+**/.direnv
+**/build
+**/managed*
+**/result
