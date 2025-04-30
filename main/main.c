@@ -4,17 +4,19 @@
 #include <sys/param.h>
 #include <string.h>
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#define FRAME_STATISTICS 1
 
 // support IDF 5.x
 #ifndef portTICK_RATE_MS
 #define portTICK_RATE_MS portTICK_PERIOD_MS
 #endif
 
-#include "esp_camera.h"
-#include "esp_mac.h"
-#include "esp_wifi.h"
+#include <esp_camera.h>
+#include <esp_mac.h>
+#include <esp_wifi.h>
 
 #include "spectral_camera.h"
 #include "spectral_udp.h"
@@ -22,8 +24,7 @@
 
 static char const *const TAG = "main:video_stream";
 
-void app_main(void)
-{
+void app_main(void) {
     // Initialize NVS for WiFi:
     {
         esp_err_t ret = nvs_flash_init();
@@ -41,6 +42,8 @@ void app_main(void)
     // Initialize camera:
     ESP_ERROR_CHECK(esp_camera_init(&camera_config));
 
+    float frame_period_ms = 20.0;
+
     // Main loop (restarts with each UDP connection):
     do {
         int sock;
@@ -52,131 +55,63 @@ void app_main(void)
 
         if (sock < 0) {
             // Nothing to do!
-            vTaskDelay(5 / portTICK_PERIOD_MS);
+            vTaskDelay(pdMS_TO_TICKS(5));
             continue;
         }
 
-        // set destination multicast addresses for sending from these sockets
-        struct sockaddr_in sdestv4 = {
-            .sin_family = PF_INET,
-            .sin_port = htons(UDP_PORT),
-        };
-        // We know this inet_aton will pass because we did it above already
-        inet_aton(MULTICAST_IPV4_ADDR, &sdestv4.sin_addr.s_addr);
+#if FRAME_STATISTICS
+        uint8_t frame_success_circular_buffer[256] = { 0 };
+        uint8_t frame_success_index = 0;
+#endif // FRAME_STATISTICS
 
-        // Loop waiting for UDP received, and sending UDP packets if we don't
-        // see any.
-        int err = 1;
+        // Main loop (restarts with each camera frame):
+        TickType_t last_iter_start_time = xTaskGetTickCount();
         do {
-            struct timeval tv = {
-                .tv_sec = 2,
-                .tv_usec = 0,
-            };
-            fd_set rfds;
-            FD_ZERO(&rfds);
-            FD_SET(sock, &rfds);
-
-            int s = select(sock + 1, &rfds, NULL, NULL, &tv);
-            if (s < 0) {
-                ESP_LOGE(TAG, "Select failed: errno %d", errno);
-                err = -1;
-                break;
-            }
-            else if (s > 0) {
-                if (FD_ISSET(sock, &rfds)) {
-                    // Incoming datagram received
-                    char recvbuf[48];
-                    char raddr_name[32] = { 0 };
-
-                    struct sockaddr_storage raddr; // Large enough for both IPv4 or IPv6
-                    socklen_t socklen = sizeof(raddr);
-                    int len = recvfrom(sock, recvbuf, sizeof(recvbuf)-1, 0,
-                                       (struct sockaddr *)&raddr, &socklen);
-                    if (len < 0) {
-                        ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
-                        err = -1;
-                        break;
-                    }
-
-                    // Get the sender's address as a string
-                    if (raddr.ss_family == PF_INET) {
-                        inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr,
-                                    raddr_name, sizeof(raddr_name)-1);
-                    }
-                    ESP_LOGI(TAG, "received %d bytes from %s:", len, raddr_name);
-
-                    recvbuf[len] = 0; // Null-terminate whatever we received and treat like a string...
-                    ESP_LOGI(TAG, "%s", recvbuf);
-                }
-            }
-            else { // s == 0
-                // Timeout passed with no incoming data, so send something!
-                static int send_count;
-                const char sendfmt[] = "Multicast #%d sent by ESP32\n";
-                char sendbuf[48];
-                char addrbuf[32] = { 0 };
-                int len = snprintf(sendbuf, sizeof(sendbuf), sendfmt, send_count++);
-                if (len > sizeof(sendbuf)) {
-                    ESP_LOGE(TAG, "Overflowed multicast sendfmt buffer!!");
-                    send_count = 0;
-                    err = -1;
-                    break;
-                }
-
-                struct addrinfo hints = {
-                    .ai_flags = AI_PASSIVE,
-                    .ai_socktype = SOCK_DGRAM,
-                };
-                struct addrinfo *res;
-
-                hints.ai_family = AF_INET; // For an IPv4 socket
-
-/*
-#ifdef CONFIG_ESP_NETIF_TCPIP_LWIP  // Resolving IPv4 mapped IPv6 addresses is supported only in the official TCPIP_LWIP stack (esp-lwip)
-                hints.ai_family = AF_INET6; // For an IPv4 socket with V4 mapped addresses
-                hints.ai_flags |= AI_V4MAPPED;
-#endif // CONFIG_ESP_NETIF_TCPIP_LWIP
-*/
-
-                int err = getaddrinfo(MULTICAST_IPV4_ADDR,
-                                      NULL,
-                                      &hints,
-                                      &res);
-                if (err < 0) {
-                    ESP_LOGE(TAG, "getaddrinfo() failed for IPV4 destination address. error: %d", err);
-                    break;
-                }
-                if (res == 0) {
-                    ESP_LOGE(TAG, "getaddrinfo() did not return any addresses");
-                    break;
-                }
-                ((struct sockaddr_in *)res->ai_addr)->sin_port = htons(UDP_PORT);
-                inet_ntoa_r(((struct sockaddr_in *)res->ai_addr)->sin_addr, addrbuf, sizeof(addrbuf)-1);
-                ESP_LOGI(TAG, "Sending to IPV4 multicast address %s:%d...",  addrbuf, UDP_PORT);
-                err = sendto(sock, sendbuf, len, 0, res->ai_addr, res->ai_addrlen);
-                freeaddrinfo(res);
-                if (err < 0) {
-                    ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d", errno);
-                    break;
-                }
-            }
-
-            // Main loop (restarts with each camera frame):
-            do {
-                ESP_LOGI(TAG, "Taking picture...");
-                camera_fb_t *pic = esp_camera_fb_get();
-
-                // use pic->buf to access the image
-                ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
+            ESP_LOGI(TAG, "Taking picture...");
+            camera_fb_t *const pic = esp_camera_fb_get();
+            if (pic) {
+                int const err = send_chunked_jpeg(sock, pic);
                 esp_camera_fb_return(pic);
+                uint8_t const successfully_transmitted = (err >= 0);
+#if FRAME_STATISTICS
+                frame_success_circular_buffer[frame_success_index] = successfully_transmitted;
+#endif // FRAME_STATISTICS
+                frame_period_ms *= (successfully_transmitted ? 0.999 : 1.01);
+                if (frame_period_ms < 20.0) {
+                    frame_period_ms = 20.0;
+                }
+                /*
+                if (!successfully_transmitted) {
+                    vTaskDelayUntil(&last_iter_start_time, pdMS_TO_TICKS((uint8_t)frame_period_ms));
+                }
+                */
+            }
 
-                // vTaskDelay(5000 / portTICK_RATE_MS);
-            } while (1);
-        } while (err > 0);
+#if FRAME_STATISTICS
+            {
+                uint16_t sum = 0;
+                uint8_t i = 0;
+                do {
+                    sum += frame_success_circular_buffer[i];
+                } while (++i);
+                ESP_LOGI(TAG, "Frame transmission success rate: %i/256 (%f%%)", sum, sum / 2.56);
+                ESP_LOGI(TAG, "Frame rate: %ffps", 1000.0 / frame_period_ms);
+            }
+            ++frame_success_index;
+#endif // FRAME_STATISTICS
+
+            TickType_t frame_period_ticks = pdMS_TO_TICKS((uint8_t)frame_period_ms);
+            if (xTaskGetTickCount() > last_iter_start_time + frame_period_ticks) {
+                ESP_LOGW(TAG, "Frame rate faster than camera frame acquisition. Slowing down...");
+                frame_period_ms *= 1.01;
+            }
+
+            // Wait for the next cycle.
+            vTaskDelayUntil(&last_iter_start_time, frame_period_ticks);
+        } while (1);
 
         ESP_LOGE(TAG, "Shutting down socket and restarting...");
         shutdown(sock, 0);
         close(sock);
     } while (1);
-
 }
