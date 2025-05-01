@@ -1,13 +1,20 @@
 #include <esp_log.h>
 #include <esp_system.h>
-#include <nvs_flash.h>
 #include <sys/param.h>
 #include <string.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#define FRAME_STATISTICS 1
+#define FRAME_STATISTICS 0
+#define FRAME_RATE_PRINT_PERIOD_MS 1000
+#define FRAME_RATE_PERIOD_MS_MIN 50.0
+#define FRAME_RATE_PERIOD_MS_MAX 1000.0
+
+// #define SLIGHTLY_LOWER 0.995
+// #define SLIGHTLY_HIGHER 1.04614593844
+#define SLIGHTLY_LOWER 0.99
+#define SLIGHTLY_HIGHER 1.09467008177
 
 // support IDF 5.x
 #ifndef portTICK_RATE_MS
@@ -22,70 +29,52 @@
 #include "spectral_udp.h"
 #include "spectral_wifi_ap.h"
 
-static char const *const TAG = "main:video_stream";
+static char const *const TAG = "SPECTRAL-MAIN";
 
 void app_main(void) {
-    // Initialize NVS for WiFi:
-    {
-        esp_err_t ret = nvs_flash_init();
-        if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-          ESP_ERROR_CHECK(nvs_flash_erase());
-          ret = nvs_flash_init();
-        }
-        ESP_ERROR_CHECK(ret);
-    }
-
     // Initialize WiFi access point:
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_AP");
     wifi_init_softap();
 
     // Initialize camera:
-    ESP_ERROR_CHECK(esp_camera_init(&camera_config));
+    init_camera();
 
-    float frame_period_ms = 20.0;
+    // Initialize UDP comms:
+    udp_init();
 
-    // Main loop (restarts with each UDP connection):
+    float frame_period_ms = 50.0;
+
+#if FRAME_STATISTICS
+    uint8_t frame_success_circular_buffer[256] = { 0 };
+    uint8_t frame_success_index = 0;
+#endif // FRAME_STATISTICS
+
+    // Main loop (restarts with each camera frame):
+    TickType_t last_iter_start_time = xTaskGetTickCount();
+    TickType_t last_frame_rate_print = 0;
     do {
-        int sock;
 
-        sock = create_multicast_socket();
-        if (sock < 0) {
-            ESP_LOGE(TAG, "Failed to create IPv4 multicast socket");
+        ESP_LOGD(TAG, "Capturing a frame...");
+        camera_fb_t *const fb = esp_camera_fb_get();
+        if (!fb) { continue; }
+
+        int const err = send_chunked_jpeg(fb);
+        esp_camera_fb_return(fb);
+        uint8_t const successfully_transmitted = (err >= 0);
+        frame_period_ms *= (successfully_transmitted ? SLIGHTLY_LOWER : SLIGHTLY_HIGHER);
+        if (frame_period_ms < FRAME_RATE_PERIOD_MS_MIN) {
+            frame_period_ms = FRAME_RATE_PERIOD_MS_MIN;
         }
-
-        if (sock < 0) {
-            // Nothing to do!
-            vTaskDelay(pdMS_TO_TICKS(5));
-            continue;
+        if (frame_period_ms > FRAME_RATE_PERIOD_MS_MAX) {
+            frame_period_ms = FRAME_RATE_PERIOD_MS_MAX;
         }
 
 #if FRAME_STATISTICS
-        uint8_t frame_success_circular_buffer[256] = { 0 };
-        uint8_t frame_success_index = 0;
+        frame_success_circular_buffer[++frame_success_index] = successfully_transmitted;
 #endif // FRAME_STATISTICS
 
-        // Main loop (restarts with each camera frame):
-        TickType_t last_iter_start_time = xTaskGetTickCount();
-        do {
-            ESP_LOGI(TAG, "Taking picture...");
-            camera_fb_t *const pic = esp_camera_fb_get();
-            if (pic) {
-                int const err = send_chunked_jpeg(sock, pic);
-                esp_camera_fb_return(pic);
-                uint8_t const successfully_transmitted = (err >= 0);
-#if FRAME_STATISTICS
-                frame_success_circular_buffer[frame_success_index] = successfully_transmitted;
-#endif // FRAME_STATISTICS
-                frame_period_ms *= (successfully_transmitted ? 0.999 : 1.01);
-                if (frame_period_ms < 20.0) {
-                    frame_period_ms = 20.0;
-                }
-                /*
-                if (!successfully_transmitted) {
-                    vTaskDelayUntil(&last_iter_start_time, pdMS_TO_TICKS((uint8_t)frame_period_ms));
-                }
-                */
-            }
+        TickType_t now = xTaskGetTickCount();
+        if (last_frame_rate_print < now) {
+            last_frame_rate_print += pdMS_TO_TICKS(FRAME_RATE_PRINT_PERIOD_MS);
 
 #if FRAME_STATISTICS
             {
@@ -95,23 +84,24 @@ void app_main(void) {
                     sum += frame_success_circular_buffer[i];
                 } while (++i);
                 ESP_LOGI(TAG, "Frame transmission success rate: %i/256 (%f%%)", sum, sum / 2.56);
-                ESP_LOGI(TAG, "Frame rate: %ffps", 1000.0 / frame_period_ms);
             }
-            ++frame_success_index;
 #endif // FRAME_STATISTICS
 
-            TickType_t frame_period_ticks = pdMS_TO_TICKS((uint8_t)frame_period_ms);
-            if (xTaskGetTickCount() > last_iter_start_time + frame_period_ticks) {
-                ESP_LOGW(TAG, "Frame rate faster than camera frame acquisition. Slowing down...");
-                frame_period_ms *= 1.01;
+            if (frame_period_ms > 0.1) {
+                ESP_LOGI(TAG, "Frame rate: %.1ffps", 1000.0 / frame_period_ms);
+            } else {
+                ESP_LOGW(TAG, "Frame rate: [absurdly high or invalid]");
             }
+        }
 
+        TickType_t frame_period_ticks = pdMS_TO_TICKS((uint8_t)frame_period_ms);
+        if (now > last_iter_start_time + frame_period_ticks) {
+            ESP_LOGD(TAG, "Frame rate faster than camera frame acquisition. Slowing down...");
+            frame_period_ms *= SLIGHTLY_HIGHER;
+            last_iter_start_time = now;
+        } else {
             // Wait for the next cycle.
             vTaskDelayUntil(&last_iter_start_time, frame_period_ticks);
-        } while (1);
-
-        ESP_LOGE(TAG, "Shutting down socket and restarting...");
-        shutdown(sock, 0);
-        close(sock);
+        }
     } while (1);
 }

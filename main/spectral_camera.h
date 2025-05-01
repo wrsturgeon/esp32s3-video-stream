@@ -1,5 +1,9 @@
 #pragma once
 
+#define JPEG_SIZE FRAMESIZE_240X240 // FRAMESIZE_128X128 // FRAMESIZE_240X240 // FRAMESIZE_QVGA // FRAMESIZE_UXGA
+#define JPEG_QUALITY 32 // 16 // 12 // verbatim: 0-63, for OV series camera sensors, lower number means higher quality
+#define CONTINUOUS_CAPTURE 0
+
 #define CAM_PIN_PWDN     -1
 #define CAM_PIN_RESET    -1
 #define CAM_PIN_XCLK     10
@@ -29,7 +33,7 @@
 #define CAM_PIN_D1 CAM_PIN_Y3
 #define CAM_PIN_D0 CAM_PIN_Y2
 
-static camera_config_t camera_config = {
+static camera_config_t const camera_config = {
     .pin_pwdn = CAM_PIN_PWDN,
     .pin_reset = CAM_PIN_RESET,
     .pin_xclk = CAM_PIN_XCLK,
@@ -54,10 +58,20 @@ static camera_config_t camera_config = {
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG, // PIXFORMAT_RGB565, //YUV422,GRAYSCALE,RGB565,JPEG
-    .frame_size = FRAMESIZE_240X240, // FRAMESIZE_QVGA,    //QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
+    .frame_size = JPEG_SIZE,    //QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-    .jpeg_quality = 12, //0-63, for OV series camera sensors, lower number means higher quality
-    .fb_count = 2, // 1,       //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+    .jpeg_quality = JPEG_QUALITY, //0-63, for OV series camera sensors, lower number means higher quality
     .fb_location = CAMERA_FB_IN_PSRAM,
-    .grab_mode = CAMERA_GRAB_LATEST, // CAMERA_GRAB_WHEN_EMPTY,
+#if CONTINUOUS_CAPTURE
+    .fb_count = 2, //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+    // .grab_mode = CAMERA_GRAB_LATEST,
+#else // CONTINUOUS_CAPTURE
+    .fb_count = 1, //When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
+    // .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
+#endif // CONTINUOUS_CAPTURE
+    .grab_mode = CAMERA_GRAB_WHEN_EMPTY,
 };
+
+static void init_camera() {
+    ESP_ERROR_CHECK(esp_camera_init(&camera_config));
+}
