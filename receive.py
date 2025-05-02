@@ -17,7 +17,7 @@ HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('', PORT))
-# sock.settimeout(1.0)
+sock.settimeout(1.0)
 
 while True:
     while True:
@@ -40,7 +40,7 @@ while True:
 
             arr = np.asarray(jpeg_buffer, dtype="uint8")
             im = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            ml.show(im)
+            ml.process(im)
 
             break
 
