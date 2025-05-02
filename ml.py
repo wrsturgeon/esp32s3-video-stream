@@ -15,6 +15,12 @@ def show(im):
         sys.exit(0)
 
 def process(im):
+    # fucking python fuckery
+    global FULL_JPEG_BUFFER
+
+    # allocate it if we haven't already,
+    # but use the image shape we actually get,
+    # for flexibility w.r.t. future changes:
     if FULL_JPEG_BUFFER is None:
         FULL_JPEG_BUFFER = jetson_utils.cudaImage(like=im) # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
 
