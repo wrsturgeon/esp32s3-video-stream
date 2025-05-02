@@ -10,7 +10,7 @@
 
 #define SPECTRAL_ADDR "10.0.0.255" // "192.168.4.255" // Broadcast, not multicast!
 #define SPECTRAL_PORT 5005 // 12345
-#define CHUNK_SIZE 1024
+#define CHUNK_SIZE 1400
 
 typedef uint16_t frame_id_t; // TODO: u8 & wrap i.e. let overflow
 
@@ -47,7 +47,7 @@ static int send_chunked_jpeg(camera_fb_t const *const fb) {
     static jpeg_chunk_header_t header = { .frame_id = 0 };
 
     header.total_packets = (fb->len + CHUNK_SIZE - 1) / CHUNK_SIZE;
-    ESP_LOGD("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id + 1, fb->len, header.total_packets, CHUNK_SIZE);
+    ESP_LOGI("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id + 1, fb->len, header.total_packets, CHUNK_SIZE);
     if (header.total_packets == 0) {
         return 0;
     }

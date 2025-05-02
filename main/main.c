@@ -6,9 +6,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#define FRAME_STATISTICS 0
+#define FRAME_STATISTICS 1
 #define FRAME_RATE_PRINT_PERIOD_MS 1000
-#define FRAME_RATE_PERIOD_MS_MIN 50.0
+#define FRAME_RATE_PERIOD_MS_MIN 10.0 // 25.0 // 50.0
 #define FRAME_RATE_PERIOD_MS_MAX 1000.0
 
 // #define SLIGHTLY_LOWER 0.995
