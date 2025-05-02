@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+
 import cv2
 import numpy as np
 import socket
 import struct
 import sys
 import time
+
+from . import ml
 
 PORT = 5005
 HEADER_FORMAT = '<HHH'
@@ -36,11 +40,7 @@ while True:
 
             arr = np.asarray(jpeg_buffer, dtype="uint8")
             im = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-            cv2.imshow('Livestream', im)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                sock.close()
-                cv2.destroyAllWindows()
-                sys.exit(0)
+            ml.show(im)
 
             break
 
