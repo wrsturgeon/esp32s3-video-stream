@@ -8,8 +8,8 @@
 #include <lwip/sys.h>
 #include <lwip/netdb.h>
 
-#define SPECTRAL_ADDR "192.168.4.255" // Broadcast, not multicast!
-#define SPECTRAL_PORT 12345
+#define SPECTRAL_ADDR "10.0.0.255" // "192.168.4.255" // Broadcast, not multicast!
+#define SPECTRAL_PORT 5005 // 12345
 #define CHUNK_SIZE 1024
 
 typedef uint16_t frame_id_t; // TODO: u8 & wrap i.e. let overflow
@@ -47,7 +47,7 @@ static int send_chunked_jpeg(camera_fb_t const *const fb) {
     static jpeg_chunk_header_t header = { .frame_id = 0 };
 
     header.total_packets = (fb->len + CHUNK_SIZE - 1) / CHUNK_SIZE;
-    ESP_LOGD("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id, fb->len, header.total_packets, CHUNK_SIZE);
+    ESP_LOGD("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id + 1, fb->len, header.total_packets, CHUNK_SIZE);
     if (header.total_packets == 0) {
         return 0;
     }
@@ -56,7 +56,7 @@ static int send_chunked_jpeg(camera_fb_t const *const fb) {
     size_t offset = 0;
     header.packet_id = 0;
     do {
-        ESP_LOGD("SPECTRAL-UDP", "Sending chunk #%i/%i", header.packet_id, header.total_packets);
+        ESP_LOGD("SPECTRAL-UDP", "Sending chunk #%i/%i", header.packet_id + 1, header.total_packets);
 
         size_t chunk_size = fb->len - offset;
         if (chunk_size > CHUNK_SIZE) { chunk_size = CHUNK_SIZE; }
@@ -77,10 +77,13 @@ static int send_chunked_jpeg(camera_fb_t const *const fb) {
         };
 
         if (sendmsg(spectral_sock, &msg, 0) < 0) {
-            if (errno != 12) {
-                ESP_LOGW("SPECTRAL-UDP", "sendmsg failed on chunk %u/%u with errno %i: %s", header.packet_id, header.total_packets, errno, strerror(errno));
+            if (errno == 12) {
+                err_code = -1;
+            } else {
+                // Otherwise, UDP is inherently lossy, so
+                // don't return an error (which would decrease the frame rate):
+                ESP_LOGW("SPECTRAL-UDP", "sendmsg failed on chunk %u/%u with errno %i: %s", header.packet_id + 1, header.total_packets, errno, strerror(errno));
             }
-            err_code = -1;
             break; // Drop the rest of this frame
         }
 
