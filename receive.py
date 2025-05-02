@@ -15,12 +15,12 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('', PORT))
 # sock.settimeout(1.0)
 
-chunk_id = 42
-
 while True:
-    while chunk_id != 0:
+    while True:
         packet, addr = sock.recvfrom(2048)
         frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
+        if chunk_id == 0:
+            break
 
     jpeg_buffer = bytearray(total_chunks * CHUNK_SIZE)
 
