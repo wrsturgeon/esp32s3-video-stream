@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import jetson.inference
-import jetson.utils
+import jetson_inference
+import jetson_utils
+
+import cv2
 
 def show(im):
             cv2.imshow('Livestream', im)
