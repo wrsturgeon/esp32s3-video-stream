@@ -8,7 +8,7 @@
 
 #define FRAME_STATISTICS 0
 #define FRAME_RATE_PRINT_PERIOD_MS 1000
-#define FRAME_RATE_PERIOD_MS_MIN 50.0
+#define FRAME_RATE_PERIOD_MS_MIN 25.0 // 50.0
 #define FRAME_RATE_PERIOD_MS_MAX 1000.0
 
 // #define SLIGHTLY_LOWER 0.995
@@ -27,13 +27,19 @@
 
 #include "spectral_camera.h"
 #include "spectral_udp.h"
-#include "spectral_wifi_ap.h"
+// #include "spectral_wifi_ap.h"
+#include "spectral_wifi_sta.h"
 
 static char const *const TAG = "SPECTRAL-MAIN";
 
 void app_main(void) {
+    /*
     // Initialize WiFi access point:
     wifi_init_softap();
+    */
+
+    // Initialize WiFi station:
+    wifi_init_sta();
 
     // Initialize camera:
     init_camera();
