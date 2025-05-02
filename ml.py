@@ -5,7 +5,7 @@ import jetson_utils
 
 import cv2
 
-FULL_JPEG_BUFFER = None
+FULL_RGB = None
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -16,26 +16,21 @@ def show(im):
 
 def process(im):
     # fucking python fuckery
-    global FULL_JPEG_BUFFER
-
-    # allocate it if we haven't already,
-    # but use the image shape we actually get,
-    # for flexibility w.r.t. future changes:
-    if FULL_JPEG_BUFFER is None:
-        height, width, channels = im.shape
-        print("A")
-        FULL_JPEG_BUFFER = jetson_utils.cudaImage(height=height, width=width, format='rgb8') # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
-        print("B")
+    global FULL_RGB
 
     # Copy from CPU to GPU:
-    im_gpu = jetson_utils.cudaFromNumpy(im)
+    bgr = jetson_utils.cudaFromNumpy(im, isBGR=True)
 
-    # Seems to be (height, width, channels), both in `im` (from OpenCV) and in CUDA.
-    jetson_utils.cudaMemcpy(dst=FULL_JPEG_BUFFER, src=im_gpu)
-    print("C")
+    # Allocate the RGB buffer if we haven't already,
+    # but use the image shape we actually get
+    # for flexibility w.r.t. future changes:
+    if FULL_RGB is None:
+        FULL_RGB = jetson_utils.cudaAllocMapped(height=bgr.height, width=bgr.width, format='rgb8')
+
+    # Convert from BGR to RGB (since OpenCV outputs BGR by default):
+    jetson_utils.cudaConvertColor(bgr, FULL_RGB)
 
     # Wait for the GPU to finish processing shared memory:
     jetson_utils.cudaDeviceSynchronize()
-    print("D")
 
     exit()
