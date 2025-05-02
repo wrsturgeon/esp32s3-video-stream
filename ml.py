@@ -5,7 +5,7 @@ import jetson_utils
 
 import cv2
 
-full_jpeg_buffer = None
+FULL_JPEG_BUFFER = None
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -15,11 +15,11 @@ def show(im):
         sys.exit(0)
 
 def process(im):
-    if full_jpeg_buffer is None:
-        full_jpeg_buffer = jetson_utils.cudaImage(like=im) # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
+    if FULL_JPEG_BUFFER is None:
+        FULL_JPEG_BUFFER = jetson_utils.cudaImage(like=im) # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
 
     # Seems to be (height, width, channels), both in `im` (from OpenCV) and in CUDA.
-    jetson_utils.cudaMemcpy(dst=full_jpeg_buffer, src=im)
+    jetson_utils.cudaMemcpy(dst=FULL_JPEG_BUFFER, src=im)
 
     # Wait for the GPU to finish processing shared memory:
     jetson_utils.cudaDeviceSynchronize()
