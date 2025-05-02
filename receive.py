@@ -25,7 +25,7 @@ while True:
             try:
                 packet, addr = sock.recvfrom(2048)
                 break
-            except socket.timout:
+            except socket.timeout:
                 print("Waiting for wireless communication...")
                 continue
         frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
