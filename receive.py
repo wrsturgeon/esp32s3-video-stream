@@ -37,6 +37,10 @@ while True:
             arr = np.asarray(jpeg_buffer, dtype="uint8")
             im = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             cv2.imshow('Livestream', im)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                sock.close()
+                cv2.destroyAllWindows()
+                sys.exit(0)
 
             break
 
