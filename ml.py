@@ -23,12 +23,16 @@ def process(im):
     # for flexibility w.r.t. future changes:
     if FULL_JPEG_BUFFER is None:
         height, width, channels = im.shape
+        print("A")
         FULL_JPEG_BUFFER = jetson_utils.cudaImage(height=height, width=width, format='rgb8', like=im) # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
+        print("B")
 
     # Seems to be (height, width, channels), both in `im` (from OpenCV) and in CUDA.
     jetson_utils.cudaMemcpy(dst=FULL_JPEG_BUFFER, src=im)
+    print("C")
 
     # Wait for the GPU to finish processing shared memory:
     jetson_utils.cudaDeviceSynchronize()
+    print("D")
 
     exit()
