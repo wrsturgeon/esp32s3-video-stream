@@ -47,7 +47,7 @@ static int send_chunked_jpeg(camera_fb_t const *const fb) {
     static jpeg_chunk_header_t header = { .frame_id = 0 };
 
     header.total_packets = (fb->len + CHUNK_SIZE - 1) / CHUNK_SIZE;
-    ESP_LOGI("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id + 1, fb->len, header.total_packets, CHUNK_SIZE);
+    ESP_LOGD("SPECTRAL-UDP", "Sending frame ID #%i (a %i-byte JPEG) in %i %i-byte chunks", header.frame_id + 1, fb->len, header.total_packets, CHUNK_SIZE);
     if (header.total_packets == 0) {
         return 0;
     }

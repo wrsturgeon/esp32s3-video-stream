@@ -32,6 +32,21 @@ while True:
                 print(f"Invalid data size (expected {CHUNK_SIZE} but found {data_len}) for chunk #{i}/{total_chunks} of frame #{frame_id}. Skipping.")
                 break
             jpeg_buffer[(CHUNK_SIZE * i):(CHUNK_SIZE * (i + 1))] = data
+
+            packet, addr = sock.recvfrom(2048)
+            this_frame_id, chunk_id, this_total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
+            if this_frame_id != frame_id:
+                print(f"Lost frame #{frame_id} ({i}/{total_chunks}); continuing on frame #{this_frame_id}.")
+                frame_id = this_frame_id
+                total_chunks = this_total_chunks
+                break
+            if this_total_chunks != total_chunks:
+                print(f"Different total chunks for frame #{total_chunks} (was {total_chunks}, now {this_total_chunks}). Skipping.")
+                break
+            if chunk_id != i:
+                print(f"In frame #{frame_id}, expected chunk #{i} but got chunk #{chunk_id}.")
+                break
+
         else:
             if data_len > CHUNK_SIZE:
                 print(f"Invalid data size (expected <={CHUNK_SIZE} but found {data_len}) for chunk #{i}/{total_chunks} of frame #{frame_id}. Skipping.")
@@ -42,21 +57,3 @@ while True:
             arr = np.asarray(jpeg_buffer, dtype="uint8")
             im = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             cv2.imshow('Livestream', im)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                sock.close()
-                cv2.destroyAllWindows()
-                sys.exit(0)
-
-        packet, addr = sock.recvfrom(2048)
-        this_frame_id, chunk_id, this_total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
-        if this_frame_id != frame_id:
-            print(f"Lost frame #{frame_id} ({i}/{total_chunks}); continuing on frame #{this_frame_id}.")
-            frame_id = this_frame_id
-            total_chunks = this_total_chunks
-            break
-        if this_total_chunks != total_chunks:
-            print(f"Different total chunks for frame #{total_chunks} (was {total_chunks}, now {this_total_chunks}). Skipping.")
-            break
-        if chunk_id != i:
-            print(f"In frame #{frame_id}, expected chunk #{i} but got chunk #{chunk_id}.")
-            break
