@@ -5,7 +5,7 @@ import time
 from collections import defaultdict
 
 # Settings
-PORT = 12345
+PORT = 5005
 CHUNK_SIZE = 1024
 HEADER_FORMAT = '<HHH'  # frame_id (uint16), packet_id (uint16), total_packets (uint16)
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)

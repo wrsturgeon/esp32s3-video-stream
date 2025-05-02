@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 # Settings
-PORT = 12345
+PORT = 5005
 HEADER_FORMAT = '<HHH'  # frame_id (uint16), packet_id (uint16), total_packets (uint16)
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 RECEIVE_TIMEOUT = 5  # seconds before discarding incomplete frame

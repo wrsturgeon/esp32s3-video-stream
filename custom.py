@@ -5,7 +5,7 @@ import struct
 import sys
 import time
 
-PORT = 12345
+PORT = 5005
 HEADER_FORMAT = '<HHH'
 CHUNK_SIZE = 1024
 
