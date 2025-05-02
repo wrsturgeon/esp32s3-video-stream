@@ -27,8 +27,11 @@ def process(im):
         FULL_JPEG_BUFFER = jetson_utils.cudaImage(height=height, width=width, format='rgb8') # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
         print("B")
 
+    # Copy from CPU to GPU:
+    im_gpu = jetson_utils.cudaFromNumpy(im)
+
     # Seems to be (height, width, channels), both in `im` (from OpenCV) and in CUDA.
-    jetson_utils.cudaMemcpy(dst=FULL_JPEG_BUFFER, src=im)
+    jetson_utils.cudaMemcpy(dst=FULL_JPEG_BUFFER, src=im_gpu)
     print("C")
 
     # Wait for the GPU to finish processing shared memory:
