@@ -59,6 +59,6 @@ while True:
         if this_total_chunks != total_chunks:
             print(f"Different total chunks for frame #{total_chunks} (was {total_chunks}, now {this_total_chunks}). Skipping.")
             break
-        if chunk_id != i:
+        if chunk_id != i + 1:
             print(f"In frame #{frame_id}, expected chunk #{i} but got chunk #{chunk_id}.")
             break
