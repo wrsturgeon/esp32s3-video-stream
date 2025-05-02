@@ -1,7 +1,7 @@
 #pragma once
 
-#define JPEG_SIZE FRAMESIZE_240X240 // FRAMESIZE_128X128 // FRAMESIZE_240X240 // FRAMESIZE_QVGA // FRAMESIZE_UXGA
-#define JPEG_QUALITY 63 // 16 // 12 // verbatim: 0-63, for OV series camera sensors, lower number means higher quality
+#define JPEG_SIZE FRAMESIZE_128X128 // FRAMESIZE_240X240 // FRAMESIZE_QVGA // FRAMESIZE_UXGA
+#define JPEG_QUALITY 63 // 32 // 12 // verbatim: 0-63, for OV series camera sensors, lower number means higher quality
 #define CONTINUOUS_CAPTURE 1
 
 #define CAM_PIN_PWDN     -1
