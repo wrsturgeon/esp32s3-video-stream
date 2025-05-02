@@ -24,7 +24,7 @@ def process(im):
     if FULL_JPEG_BUFFER is None:
         height, width, channels = im.shape
         print("A")
-        FULL_JPEG_BUFFER = jetson_utils.cudaImage(height=height, width=width, format='rgb8', like=im) # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
+        FULL_JPEG_BUFFER = jetson_utils.cudaImage(height=height, width=width, format='rgb8') # jetson_utils.cudaImage(width=160, height=120, format="rgb8")
         print("B")
 
     # Seems to be (height, width, channels), both in `im` (from OpenCV) and in CUDA.
