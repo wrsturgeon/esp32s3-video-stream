@@ -21,7 +21,13 @@ sock.settimeout(1.0)
 
 while True:
     while True:
-        packet, addr = sock.recvfrom(2048)
+        while True:
+            try:
+                packet, addr = sock.recvfrom(2048)
+                break
+            except socket.timout:
+                print("Waiting for wireless communication...")
+                continue
         frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
         if chunk_id == 0:
             break
