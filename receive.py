@@ -7,7 +7,7 @@ import struct
 import sys
 import time
 
-from . import ml
+import ml
 
 PORT = 5005
 HEADER_FORMAT = '<HHH'
