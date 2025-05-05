@@ -30,11 +30,14 @@ def get_next_packet():
     start_time = time.time()
     while packet is None:
         try:
-            packet = sock.recv(2048)
+            return sock.recv(2048)
         except BlockingIOError:
             if time.time() > start_time + PACKET_TIMEOUT_SECONDS:
                 print("Waiting for wireless communication...")
                 start_time += PACKET_TIMEOUT_SECONDS
+
+def get_latest_packet():
+    packet = get_next_packet()
 
     # Then keep going until we have the *most recent* packet:
     while True:
@@ -46,7 +49,7 @@ def get_next_packet():
 
 while True:
     while True:
-        packet = get_next_packet()
+        packet = get_latest_packet()
         frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
         if chunk_id == 0:
             break
