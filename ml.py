@@ -53,10 +53,6 @@ def process(im):
     if FACE_BBOX is None:
         return
 
-    x, y = FACE_BBOX.left(), FACE_BBOX.top()
-    cv2.rectangle(im, (x, y), (FACE_BBOX.right(), FACE_BBOX.bottom()), (0, 255, 0), 2)
-    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if new_bbox else (255, 0, 0), 2)
-
     # left = 0
     # top = 0
     # right = width
@@ -71,6 +67,11 @@ def process(im):
         multiplier = 2 * multiplier
 
     im = cv2.cvtColor(im, cv2.COLOR_GRAY2BGR)
+
+    x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
+    color = (0, 255, 0) if new_bbox else (255, 0, 0)
+    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, 2)
+    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     for i, point in enumerate(predicted.parts()):
         x = point.x * multiplier
