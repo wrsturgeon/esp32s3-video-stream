@@ -32,10 +32,17 @@ def process(im):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
-    face = DLIB_FACE_DETECTOR(im, 1)
-    print(face)
+    face_bboxes = DLIB_FACE_DETECTOR(im, 0)
+    print(face_bboxes)
+    for i, rect in enumerate(face_bboxes):
+        x, y, w, h = rect2bbox(rect)
+        cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    exit()
+        # shape = predictor(im, rect)
+        # shape = shape2np(shape)
+
+    show(im)
 
 def to_cuda_test(im):
     # fucking python fuckery
