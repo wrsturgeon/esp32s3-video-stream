@@ -4,7 +4,10 @@ import jetson_inference
 import jetson_utils
 
 import cv2
+
 import dlib
+assert(dlib.DLIB_USE_CUDA)
+assert(dlib.cuda.get_num_devices() > 0)
 
 import pathlib
 DLIB_LANDMARK_PREDICTOR_PATH = "dlib_shape_predictor.dat"
@@ -38,21 +41,21 @@ def process(im):
     # Convert to grayscale:
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
-    # face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
-    # print(face_bboxes)
-    # for i, bbox in enumerate(face_bboxes):
-    #     x, y = bbox.left(), bbox.top()
-    #     cv2.rectangle(im, (x, y), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
-    #     cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    #
-    #     # shape = predictor(im, bbox)
-    #     # shape = shape2np(shape)
+    face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
+    for i, bbox in enumerate(face_bboxes):
+        x, y = bbox.left(), bbox.top()
+        cv2.rectangle(im, (x, y), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
+        cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-    left = 0
-    top = 0
-    right = width
-    bottom = height
-    bbox = dlib.rectangle(left, top, right, bottom)
+        # shape = predictor(im, bbox)
+        # shape = shape2np(shape)
+
+    # left = 0
+    # top = 0
+    # right = width
+    # bottom = height
+    # bbox = dlib.rectangle(left, top, right, bottom)
+
     predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
 
     multiplier = 1
