@@ -74,4 +74,7 @@ static camera_config_t const camera_config = {
 
 static void init_camera() {
     ESP_ERROR_CHECK(esp_camera_init(&camera_config));
+
+    sensor_t const *sensor = esp_camera_sensor_get();
+    sensor->set_hmirror(sensor, 1);
 }
