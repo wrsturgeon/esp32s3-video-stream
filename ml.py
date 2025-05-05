@@ -33,8 +33,9 @@ def process(im):
     global DLIB_LANDMARK_PREDICTOR
 
     face = DLIB_FACE_DETECTOR(im, 1)
+    print(face)
 
-    exit(1)
+    exit()
 
 def to_cuda_test(im):
     # fucking python fuckery
