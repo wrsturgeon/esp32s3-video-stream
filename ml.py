@@ -46,21 +46,24 @@ def process(im):
     update_face_bbox = (FACE_BBOX_LAST_UPDATE is None)
     if not update_face_bbox:
         face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
-        if face_bbox_staleness > 1.:
+        if face_bbox_staleness >= 1.:
             update_face_bbox = True
             face_bbox_staleness = 1.
 
     if update_face_bbox:
+        face_bbox_updated = False
         face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
         for i, bbox in enumerate(face_bboxes):
+            face_bbox_updated = True
             FACE_BBOX = bbox
 
         if FACE_BBOX is None:
             print("Waiting to detect a face...")
             return
 
-        FACE_BBOX_LAST_UPDATE = time.time() if FACE_BBOX_LAST_UPDATE is None else FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
-        face_bbox_staleness = 0.
+        if face_bbox_updated:
+            FACE_BBOX_LAST_UPDATE = time.time() if FACE_BBOX_LAST_UPDATE is None else FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
+            face_bbox_staleness = 0.
 
     landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
