@@ -9,7 +9,7 @@ import dlib
 import pathlib
 DLIB_LANDMARK_PREDICTOR_PATH = "dlib_shape_predictor.dat"
 if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
-    import urllib
+    import urllib.request
     urllib.request.urlretrieve("http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2", DLIB_LANDMARK_PREDICTOR_PATH + ".bz2")
     import bz2
     zipfile = bz2.BZ2File(DLIB_LANDMARK_PREDICTOR_PATH + ".bz2")
