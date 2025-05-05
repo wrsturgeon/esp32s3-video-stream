@@ -42,6 +42,7 @@ def get_next_packet():
     while True:
         try:
             PACKET = sock.recv(2048)
+            print("Skipped a packet...")
         except BlockingIOError:
             return
 
