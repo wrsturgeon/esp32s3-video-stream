@@ -51,6 +51,10 @@ def process(im):
     bottom = height
     bbox = dlib.rectangle(left, top, right, bottom)
     predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
+    print(predicted)
+
+    for point in predicted.parts():
+        cv2.circle(image, (point.x, point.y), 1, (0, 0, 255), -1)
 
     show(im)
 
