@@ -48,6 +48,7 @@ def process(im):
         face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
         if face_bbox_staleness > 1.:
             update_face_bbox = True
+            face_bbox_staleness = 1.
 
     if update_face_bbox:
         face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
