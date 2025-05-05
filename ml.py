@@ -22,6 +22,7 @@ DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 FULL_RGB = None
 
 # SCALE_UP_BEFORE_DETECTING_FACES = 0
+LOG_IMAGE_UPSCALE = 2
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -53,10 +54,14 @@ def process(im):
     bottom = height
     bbox = dlib.rectangle(left, top, right, bottom)
     predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
-    print(predicted)
+
+    multiplier = 1
+    for _ in range(0, LOG_IMAGE_UPSCALE):
+        im = pyrUp(im)
+        multiplier = 2 * multiplier
 
     for point in predicted.parts():
-        cv2.circle(im, (point.x, point.y), 1, (0, 0, 255), -1)
+        cv2.circle(im, (point.x * multiplier, point.y * multiplier), 1, (0, 0, 255), -1)
 
     show(im)
 
