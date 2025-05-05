@@ -32,6 +32,8 @@ def process(im):
     # global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
+    height, width, channels = im.shape
+
     # im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     # face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     # print(face_bboxes)
@@ -45,8 +47,8 @@ def process(im):
 
     left = 0
     top = 0
-    right = im.width()
-    bottom = im.height()
+    right = width
+    bottom = height
     bbox = dlib.rectangle(left, top, right, bottom)
     predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
 
