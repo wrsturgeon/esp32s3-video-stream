@@ -4,8 +4,21 @@ import jetson_inference
 import jetson_utils
 
 import cv2
+import dlib
 
 FULL_RGB = None
+
+DLIB_LANDMARK_PREDICTOR_PATH = "dlib_shape_predictor.dat"
+if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
+    import urllib
+    urllib.request.urlretrieve("http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2", DLIB_LANDMARK_PREDICTOR_PATH + ".bz2")
+    import bz2
+    zipfile = bz2.BZ2File(DLIB_LANDMARK_PREDICTOR_PATH + ".bz2")
+    decompressed = zipfile.read()
+    open(DLIB_LANDMARK_PREDICTOR_PATH, 'wb').write(decompressed)
+
+DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
+DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -15,6 +28,14 @@ def show(im):
         sys.exit(0)
 
 def process(im):
+    global DLIB_FACE_DETECTOR
+    global DLIB_LANDMARK_PREDICTOR
+
+    face = DLIB_FACE_DETECTOR(im, 1)
+
+    exit(1)
+
+def to_cuda_test(im):
     # fucking python fuckery
     global FULL_RGB
 
