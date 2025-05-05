@@ -34,6 +34,7 @@ def process(im):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     print(face_bboxes)
     for i, bbox in enumerate(face_bboxes):
