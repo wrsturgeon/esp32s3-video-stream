@@ -25,6 +25,7 @@ LOG_DISPLAY_UPSCALE = 3
 
 FACE_BBOX = None
 FACE_BBOX_LAST_UPDATE = None
+FACE_BBOX_UPDATE_PERIOD_SECONDS = 1.
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -42,23 +43,25 @@ def process(im):
     # Convert to grayscale:
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
-    face_bbox_staleness = time.time() - FACE_BBOX_LAST_UPDATE
+    update_face_bbox = (FACE_BBOX_LAST_UPDATE is None)
+    if not update_face_bbox:
+        face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
+        if face_bbox_staleness > 1.:
+            update_face_bbox = True
 
-    face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
-    for i, bbox in enumerate(face_bboxes):
-        FACE_BBOX = bbox
+    if update_face_bbox:
+        face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
+        for i, bbox in enumerate(face_bboxes):
+            FACE_BBOX = bbox
 
-    if FACE_BBOX is None:
-        print("Waiting to detect a face...")
-        return
+        if FACE_BBOX is None:
+            print("Waiting to detect a face...")
+            return
 
-    # left = 0
-    # top = 0
-    # right = width
-    # bottom = height
-    # bbox = dlib.rectangle(left, top, right, bottom)
+        FACE_BBOX_LAST_UPDATE = FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
+        face_bbox_staleness = 0.
 
-    predicted = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
+    landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
     multiplier = 1
     for _ in range(0, LOG_DISPLAY_UPSCALE):
@@ -73,7 +76,7 @@ def process(im):
     cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, w // 256)
     cv2.putText(im, "Face", (x, y - w // 128), cv2.FONT_HERSHEY_SIMPLEX, w // 512, color, w // 256)
 
-    for i, point in enumerate(predicted.parts()):
+    for i, point in enumerate(landmarks.parts()):
         x = point.x * multiplier
         y = point.y * multiplier
         m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
