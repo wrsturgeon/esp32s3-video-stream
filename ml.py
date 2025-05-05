@@ -60,8 +60,13 @@ def process(im):
         im = cv2.pyrUp(im)
         multiplier = 2 * multiplier
 
-    for point in predicted.parts():
-        cv2.circle(im, (point.x * multiplier, point.y * multiplier), 1, (0, 0, 255), -1)
+    im = cv2.cvtColor(im, cv2.COLOR_GRAY2BGR)
+
+    for i, point in enumerate(predicted.parts()):
+        x = point.x * multiplier
+        y = point.y * multiplier
+        cv2.circle(im, (x, y), multiplier, (0, 0, 255), -1)
+        cv2.putText(im, f"{i + 1}", (x - multiplier, y - multiplier), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     show(im)
 
