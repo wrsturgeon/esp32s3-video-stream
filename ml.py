@@ -97,12 +97,12 @@ def process(im):
             cv2.circle(im, (x, y), m, (255, 0, 0), -1)
             cv2.putText(im, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
 
-        eyebrow_left_center = landmarks.part(19)
-        eyebrow_right_center = landmarks.part(24)
-        lip_lower_center = landmarks.part(66)
-        lip_upper_center = landmarks.part(62)
-        nose_top = landmarks.part(27)
-        nose_base = landmarks.part(33)
+    eyebrow_left_center = landmarks.part(19)
+    eyebrow_right_center = landmarks.part(24)
+    lip_lower_center = landmarks.part(66)
+    lip_upper_center = landmarks.part(62)
+    nose_top = landmarks.part(27)
+    nose_base = landmarks.part(33)
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
