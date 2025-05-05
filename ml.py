@@ -72,14 +72,14 @@ def process(im):
     x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
     w = (FACE_BBOX.right() * multiplier) - x
     color = (0, 255, 0) if new_bbox else (255, 0, 0)
-    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w / 128.))
-    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, (w / 512.), color, (w / 256.))
+    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, w // 128)
+    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, w // 512, color, w // 256)
 
     for i, point in enumerate(predicted.parts()):
         x = point.x * multiplier
         y = point.y * multiplier
         cv2.circle(im, (x, y), multiplier, (0, 0, 255), -1)
-        cv2.putText(im, f"{i}", (x - multiplier, y - multiplier), cv2.FONT_HERSHEY_SIMPLEX, (w / 512.), (0, 255, 0), (w / 256.))
+        cv2.putText(im, f"{i}", (x - multiplier, y - multiplier), cv2.FONT_HERSHEY_SIMPLEX, w // 512, (0, 255, 0), w // 256)
 
     show(im)
 
