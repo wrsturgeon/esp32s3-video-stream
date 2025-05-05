@@ -21,6 +21,8 @@ DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 FULL_RGB = None
 
+SCALE_UP_BEFORE_DETECTING_FACES = 0
+
 def show(im):
     cv2.imshow('Livestream', im)
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -32,7 +34,7 @@ def process(im):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
-    face_bboxes = DLIB_FACE_DETECTOR(im, 1)
+    face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     print(face_bboxes)
     for i, bbox in enumerate(face_bboxes):
         x, y = bbox.left(), bbox.top()
