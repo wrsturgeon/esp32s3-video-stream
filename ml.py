@@ -19,13 +19,15 @@ if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
     decompressed = zipfile.read()
     open(DLIB_LANDMARK_PREDICTOR_PATH, 'wb').write(decompressed)
 
-# DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
+DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 FULL_RGB = None
 
-# SCALE_UP_BEFORE_DETECTING_FACES = 0
+SCALE_UP_BEFORE_DETECTING_FACES = 0
 LOG_IMAGE_UPSCALE = 2
+
+FACE_BBOX = None
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -33,22 +35,27 @@ def show(im):
         exit(0)
 
 def process(im):
-    # global DLIB_FACE_DETECTOR
+    global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
+    global FACE_BBOX
 
     height, width, channels = im.shape
 
     # Convert to grayscale:
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
+    new_bbox = False
     face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     for i, bbox in enumerate(face_bboxes):
-        x, y = bbox.left(), bbox.top()
-        cv2.rectangle(im, (x, y), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
-        cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        new_bbox = True
+        FACE_BBOX = bbox
 
-        # shape = predictor(im, bbox)
-        # shape = shape2np(shape)
+    if FACE_BBOX is None:
+        return
+
+    x, y = FACE_BBOX.left(), FACE_BBOX.top()
+    cv2.rectangle(im, (x, y), (FACE_BBOX.right(), FACE_BBOX.bottom()), (0, 255, 0), 2)
+    cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if new_bbox else (255, 0, 0), 2)
 
     # left = 0
     # top = 0
@@ -56,7 +63,7 @@ def process(im):
     # bottom = height
     # bbox = dlib.rectangle(left, top, right, bottom)
 
-    predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
+    predicted = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
     multiplier = 1
     for _ in range(0, LOG_IMAGE_UPSCALE):
