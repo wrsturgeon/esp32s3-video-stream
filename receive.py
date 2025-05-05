@@ -17,25 +17,29 @@ HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('', PORT))
-sock.settimeout(1.0)
+fcntl.fcntl(sock, fcntl.F_SETFL, os.O_NONBLOCK)
+# sock.settimeout(1.0)
 
 while True:
     while True:
-        while True:
-            try:
-                packet, addr = sock.recvfrom(2048)
-                break
-            except socket.timeout:
-                print("Waiting for wireless communication...")
-                continue
-        frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
+        # while True:
+        #     try:
+        #         PACKET = sock.recv(2048)
+        #         break
+        #     except socket.timeout:
+        #         print("Waiting for wireless communication...")
+        #         continue
+        PACKET = None
+        while PACKET is None:
+            PACKET = sock.recv(2048)
+        frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, PACKET[:HEADER_SIZE])
         if chunk_id == 0:
             break
 
     jpeg_buffer = bytearray(total_chunks * CHUNK_SIZE)
 
     for i in range(0, total_chunks):
-        data = packet[HEADER_SIZE:]
+        data = PACKET[HEADER_SIZE:]
         data_len = len(data)
         if i == total_chunks - 1:
             if data_len > CHUNK_SIZE:
@@ -55,8 +59,10 @@ while True:
             break
         jpeg_buffer[(CHUNK_SIZE * i):(CHUNK_SIZE * (i + 1))] = data
 
-        packet, addr = sock.recvfrom(2048)
-        this_frame_id, chunk_id, this_total_chunks = struct.unpack(HEADER_FORMAT, packet[:HEADER_SIZE])
+        PACKET = None
+        while PACKET is None:
+            PACKET = sock.recv(2048)
+        this_frame_id, chunk_id, this_total_chunks = struct.unpack(HEADER_FORMAT, PACKET[:HEADER_SIZE])
         if this_frame_id != frame_id:
             print(f"Lost frame #{frame_id} ({i}/{total_chunks}); continuing on frame #{this_frame_id}.")
             frame_id = this_frame_id
