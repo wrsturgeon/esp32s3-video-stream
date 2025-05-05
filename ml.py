@@ -34,7 +34,9 @@ def process(im):
 
     height, width, channels = im.shape
 
-    # im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    # Convert to grayscale:
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
     # face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     # print(face_bboxes)
     # for i, bbox in enumerate(face_bboxes):
