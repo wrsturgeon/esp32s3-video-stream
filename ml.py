@@ -26,7 +26,7 @@ SCALE_UP_BEFORE_DETECTING_FACES = 0
 def show(im):
     cv2.imshow('Livestream', im)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        sys.exit(0)
+        exit(0)
 
 def process(im):
     global DLIB_FACE_DETECTOR
