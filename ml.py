@@ -58,7 +58,7 @@ def process(im):
             print("Waiting to detect a face...")
             return
 
-        FACE_BBOX_LAST_UPDATE = FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
+        FACE_BBOX_LAST_UPDATE = time.time() if FACE_BBOX_LAST_UPDATE is None else FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
         face_bbox_staleness = 0.
 
     landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
