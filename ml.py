@@ -99,18 +99,18 @@ def process(im):
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
-        eyebrow_left_left = landmarks.part(18) * multiplier
-        eyebrow_left_center = landmarks.part(19) * multiplier
-        eyebrow_left_right = landmarks.part(20) * multiplier
+        eyebrow_left_left = landmarks.part(18)
+        eyebrow_left_center = landmarks.part(19)
+        eyebrow_left_right = landmarks.part(20)
 
-        eyebrow_right_left = landmarks.part(23) * multiplier
-        eyebrow_right_center = landmarks.part(24) * multiplier
-        eyebrow_right_right = landmarks.part(25) * multiplier
+        eyebrow_right_left = landmarks.part(23)
+        eyebrow_right_center = landmarks.part(24)
+        eyebrow_right_right = landmarks.part(25)
 
-        cv2.line(im, (eyebrow_left_left.x, eyebrow_left_left.y), (eyebrow_left_center.x, eyebrow_left_center.y), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_left_center.x, eyebrow_left_center.y), (eyebrow_left_right.x, eyebrow_left_right.y), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (eyebrow_left_right.x * multiplier, eyebrow_left_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
-        cv2.line(im, (eyebrow_right_left.x, eyebrow_right_left.y), (eyebrow_right_center.x, eyebrow_right_center.y), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_right_center.x, eyebrow_right_center.y), (eyebrow_right_right.x, eyebrow_right_right.y), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (eyebrow_right_left.x * multiplier, eyebrow_right_left.y * multiplier), (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
     show(im)
