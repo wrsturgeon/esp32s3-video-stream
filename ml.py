@@ -55,7 +55,7 @@ def process(im):
 
     x, y = FACE_BBOX.left(), FACE_BBOX.top()
     cv2.rectangle(im, (x, y), (FACE_BBOX.right(), FACE_BBOX.bottom()), (0, 255, 0), 2)
-    cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if new_bbox else (255, 0, 0), 2)
+    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if new_bbox else (255, 0, 0), 2)
 
     # left = 0
     # top = 0
