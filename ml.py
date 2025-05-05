@@ -34,12 +34,11 @@ def process(im):
 
     face_bboxes = DLIB_FACE_DETECTOR(im, 0)
     print(face_bboxes)
-    for i, rect in enumerate(face_bboxes):
-        x, y, w, h = rect2bbox(rect)
-        cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    for i, bbox in enumerate(face_bboxes):
+        cv2.rectangle(im, (bbox.left(), bbox.top()), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
         cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        # shape = predictor(im, rect)
+        # shape = predictor(im, bbox)
         # shape = shape2np(shape)
 
     show(im)
