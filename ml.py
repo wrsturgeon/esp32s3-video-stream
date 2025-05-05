@@ -16,12 +16,12 @@ if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
     decompressed = zipfile.read()
     open(DLIB_LANDMARK_PREDICTOR_PATH, 'wb').write(decompressed)
 
-DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
+# DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 FULL_RGB = None
 
-SCALE_UP_BEFORE_DETECTING_FACES = 0
+# SCALE_UP_BEFORE_DETECTING_FACES = 0
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -29,19 +29,26 @@ def show(im):
         exit(0)
 
 def process(im):
-    global DLIB_FACE_DETECTOR
+    # global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
-    print(face_bboxes)
-    for i, bbox in enumerate(face_bboxes):
-        x, y = bbox.left(), bbox.top()
-        cv2.rectangle(im, (x, y), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
-        cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    # im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    # face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
+    # print(face_bboxes)
+    # for i, bbox in enumerate(face_bboxes):
+    #     x, y = bbox.left(), bbox.top()
+    #     cv2.rectangle(im, (x, y), (bbox.right(), bbox.bottom()), (0, 255, 0), 2)
+    #     cv2.putText(im, f"Face #{i + 1}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+    #
+    #     # shape = predictor(im, bbox)
+    #     # shape = shape2np(shape)
 
-        # shape = predictor(im, bbox)
-        # shape = shape2np(shape)
+    left = 0
+    top = 0
+    right = im.width()
+    bottom = im.height()
+    bbox = dlib.rectangle(left, top, right, bottom)
+    predicted = DLIB_LANDMARK_PREDICTOR(im, bbox)
 
     show(im)
 
