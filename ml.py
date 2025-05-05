@@ -25,7 +25,7 @@ LOG_DISPLAY_UPSCALE = 3
 
 FACE_BBOX = None
 FACE_BBOX_LAST_UPDATE = None
-FACE_BBOX_UPDATE_PERIOD_SECONDS = 1.
+FACE_BBOX_UPDATE_PERIOD_SECONDS = 0.5
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -63,7 +63,7 @@ def process(im):
 
         if face_bbox_updated:
             FACE_BBOX_LAST_UPDATE = time.time() if FACE_BBOX_LAST_UPDATE is None else FACE_BBOX_LAST_UPDATE + FACE_BBOX_UPDATE_PERIOD_SECONDS
-            face_bbox_staleness = 0.
+            face_bbox_staleness = face_bbox_staleness - 1.
 
     landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
