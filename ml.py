@@ -81,14 +81,14 @@ def process(im):
     x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
     w = (FACE_BBOX.right() * multiplier) - x
     color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
-    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 255) // 256)
-    cv2.putText(im, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 255) // 256)
+    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
+    cv2.putText(im, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
 
     for i, point in enumerate(landmarks.parts()):
         x = point.x * multiplier
         y = point.y * multiplier
         m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
         cv2.circle(im, (x, y), m, (0, 0, 255), -1)
-        cv2.putText(im, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 511) // 512)
+        cv2.putText(im, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
 
     show(im)
