@@ -32,7 +32,7 @@ def process(im):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
 
-    face_bboxes = DLIB_FACE_DETECTOR(im, 0)
+    face_bboxes = DLIB_FACE_DETECTOR(im, 1)
     print(face_bboxes)
     for i, bbox in enumerate(face_bboxes):
         x, y = bbox.left(), bbox.top()
