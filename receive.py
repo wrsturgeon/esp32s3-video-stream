@@ -38,6 +38,13 @@ def get_next_packet():
                 print("Waiting for wireless communication...")
                 start_time += PACKET_TIMEOUT_SECONDS
 
+    # Then keep going until we have the *most recent* packet:
+    while True:
+        try:
+            PACKET = sock.recv(2048)
+        except BlockingIOError:
+            return
+
 while True:
     while True:
         # while True:
