@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-import jetson_inference
-import jetson_utils
-
 import cv2
 
 import dlib
-assert(dlib.DLIB_USE_CUDA)
-assert(dlib.cuda.get_num_devices() > 0)
+assert dlib.DLIB_USE_CUDA
+assert dlib.cuda.get_num_devices() > 0
 
 import pathlib
 DLIB_LANDMARK_PREDICTOR_PATH = "dlib_shape_predictor.dat"
@@ -22,12 +19,11 @@ if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
 DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
-FULL_RGB = None
-
 SCALE_UP_BEFORE_DETECTING_FACES = 0
-LOG_IMAGE_UPSCALE = 3
+LOG_DISPLAY_UPSCALE = 3
 
 FACE_BBOX = None
+FACE_BBOX_LAST_UPDATE = None
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -38,16 +34,17 @@ def process(im):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
     global FACE_BBOX
+    global FACE_BBOX_LAST_UPDATE
 
     height, width, channels = im.shape
 
     # Convert to grayscale:
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
 
-    new_bbox = False
+    face_bbox_staleness = time.time() - FACE_BBOX_LAST_UPDATE
+
     face_bboxes = DLIB_FACE_DETECTOR(im, SCALE_UP_BEFORE_DETECTING_FACES)
     for i, bbox in enumerate(face_bboxes):
-        new_bbox = True
         FACE_BBOX = bbox
 
     if FACE_BBOX is None:
@@ -63,7 +60,7 @@ def process(im):
     predicted = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
     multiplier = 1
-    for _ in range(0, LOG_IMAGE_UPSCALE):
+    for _ in range(0, LOG_DISPLAY_UPSCALE):
         im = cv2.pyrUp(im)
         multiplier = 2 * multiplier
 
@@ -71,35 +68,15 @@ def process(im):
 
     x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
     w = (FACE_BBOX.right() * multiplier) - x
-    color = (0, 255, 0) if new_bbox else (255, 0, 0)
-    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, w // 128)
-    cv2.putText(im, "Face" if new_bbox else "Face (STALE)", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, w // 512, color, w // 256)
+    color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
+    cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, w // 256)
+    cv2.putText(im, "Face", (x, y - w // 128), cv2.FONT_HERSHEY_SIMPLEX, w // 512, color, w // 256)
 
     for i, point in enumerate(predicted.parts()):
         x = point.x * multiplier
         y = point.y * multiplier
-        cv2.circle(im, (x, y), multiplier, (0, 0, 255), -1)
-        cv2.putText(im, f"{i}", (x - multiplier, y - multiplier), cv2.FONT_HERSHEY_SIMPLEX, w // 512, (0, 255, 0), w // 256)
+        m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
+        cv2.circle(im, (x, y), m, (0, 0, 255), -1)
+        cv2.putText(im, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w // 1024, (0, 255, 0), w // 512)
 
     show(im)
-
-def to_cuda_test(im):
-    # fucking python fuckery
-    global FULL_RGB
-
-    # Copy from CPU to GPU:
-    bgr = jetson_utils.cudaFromNumpy(im, isBGR=True)
-
-    # Allocate the RGB buffer if we haven't already,
-    # but use the image shape we actually get
-    # for flexibility w.r.t. future changes:
-    if FULL_RGB is None:
-        FULL_RGB = jetson_utils.cudaAllocMapped(height=bgr.height, width=bgr.width, format='rgb8')
-
-    # Convert from BGR to RGB (since OpenCV outputs BGR by default):
-    jetson_utils.cudaConvertColor(bgr, FULL_RGB)
-
-    # Wait for the GPU to finish processing shared memory:
-    jetson_utils.cudaDeviceSynchronize()
-
-    exit()
