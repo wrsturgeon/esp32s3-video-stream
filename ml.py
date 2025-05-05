@@ -57,7 +57,7 @@ def process(im):
 
     multiplier = 1
     for _ in range(0, LOG_IMAGE_UPSCALE):
-        im = pyrUp(im)
+        im = cv2.pyrUp(im)
         multiplier = 2 * multiplier
 
     for point in predicted.parts():
