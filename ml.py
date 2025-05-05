@@ -28,7 +28,7 @@ FACE_BBOX_LAST_UPDATE = None
 FACE_BBOX_UPDATE_PERIOD_SECONDS = 0.5
 
 DISPLAY_FACE_BBOX = True
-DISPLAY_ALL_FACE_POINTS = True
+DISPLAY_ALL_FACE_POINTS = False
 DISPLAY_RELEVANT_FACE_LINES = True
 
 def show(im):
@@ -102,7 +102,7 @@ def process(im):
         lip_lower_center = landmarks.part(66)
         lip_upper_center = landmarks.part(62)
         nose_top = landmarks.part(27)
-        nose_tip = landmarks.part(30)
+        nose_base = landmarks.part(33)
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
@@ -116,19 +116,16 @@ def process(im):
         eyebrow_right_right = landmarks.part(25)
         eyebrow_right_farright = landmarks.part(26)
 
-        # lip_lower_farleft = landmarks.part(68)
         lip_lower_left = landmarks.part(67)
         lip_lower_right = landmarks.part(65)
-        # lip_lower_farright = landmarks.part(65)
 
-        # lip_upper_farleft = landmarks.part(60)
+        mouth_corner_left = landmarks.part(60)
+        mouth_corner_right = landmarks.part(64)
+
         lip_upper_left = landmarks.part(61)
         lip_upper_right = landmarks.part(63)
-        # lip_upper_farright = landmarks.part(64)
 
-        # chin_left = landmarks.part(7)
-        # chin_center = landmarks.part(8)
-        # chin_right = landmarks.part(9)
+        nose_tip = landmarks.part(30)
 
         cv2.line(im, (eyebrow_left_farleft.x * multiplier, eyebrow_left_farleft.y * multiplier), (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
@@ -140,15 +137,16 @@ def process(im):
         cv2.line(im, (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (eyebrow_right_farright.x * multiplier, eyebrow_right_farright.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
+        cv2.line(im, (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-
+        cv2.line(im, (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
         cv2.line(im, (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-
-        # cv2.line(im, (chin_left.x * multiplier, chin_left.y * multiplier), (chin_center.x * multiplier, chin_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        # cv2.line(im, (chin_center.x * multiplier, chin_center.y * multiplier), (chin_right.x * multiplier, chin_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
         cv2.line(im, (nose_top.x * multiplier, nose_top.y * multiplier), (nose_tip.x * multiplier, nose_tip.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(im, (nose_tip.x * multiplier, nose_tip.y * multiplier), (nose_base.x * multiplier, nose_base.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
     show(im)
