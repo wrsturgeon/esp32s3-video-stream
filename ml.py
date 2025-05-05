@@ -21,7 +21,7 @@ DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 FULL_RGB = None
 
-SCALE_UP_BEFORE_DETECTING_FACES = 1
+SCALE_UP_BEFORE_DETECTING_FACES = 0
 
 def show(im):
     cv2.imshow('Livestream', im)
