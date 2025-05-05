@@ -6,8 +6,7 @@ import jetson_utils
 import cv2
 import dlib
 
-FULL_RGB = None
-
+import pathlib
 DLIB_LANDMARK_PREDICTOR_PATH = "dlib_shape_predictor.dat"
 if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
     import urllib
@@ -19,6 +18,8 @@ if not pathlib.Path(DLIB_LANDMARK_PREDICTOR_PATH).exists():
 
 DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
+
+FULL_RGB = None
 
 def show(im):
     cv2.imshow('Livestream', im)
