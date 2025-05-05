@@ -22,6 +22,22 @@ sock.bind(('', PORT))
 fcntl.fcntl(sock, fcntl.F_SETFL, os.O_NONBLOCK)
 # sock.settimeout(1.0)
 
+PACKET = None
+PACKET_TIMEOUT_SECONDS = 1
+
+def get_next_packet():
+    global PACKET
+    PACKET = None
+
+    start_time = time.time()
+    while PACKET is None:
+        try:
+            PACKET = sock.recv(2048)
+        except BlockingIOError:
+            if time.time() > start_time + PACKET_TIMEOUT_SECONDS:
+                print("Waiting for wireless communication...")
+                start_time += PACKET_TIMEOUT_SECONDS
+
 while True:
     while True:
         # while True:
@@ -31,9 +47,7 @@ while True:
         #     except socket.timeout:
         #         print("Waiting for wireless communication...")
         #         continue
-        PACKET = None
-        while PACKET is None:
-            PACKET = sock.recv(2048)
+        get_next_packet()
         frame_id, chunk_id, total_chunks = struct.unpack(HEADER_FORMAT, PACKET[:HEADER_SIZE])
         if chunk_id == 0:
             break
@@ -61,9 +75,7 @@ while True:
             break
         jpeg_buffer[(CHUNK_SIZE * i):(CHUNK_SIZE * (i + 1))] = data
 
-        PACKET = None
-        while PACKET is None:
-            PACKET = sock.recv(2048)
+        get_next_packet()
         this_frame_id, chunk_id, this_total_chunks = struct.unpack(HEADER_FORMAT, PACKET[:HEADER_SIZE])
         if this_frame_id != frame_id:
             print(f"Lost frame #{frame_id} ({i}/{total_chunks}); continuing on frame #{this_frame_id}.")
