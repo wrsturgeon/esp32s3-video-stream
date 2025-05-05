@@ -51,6 +51,7 @@ def process(im):
         FACE_BBOX = bbox
 
     if FACE_BBOX is None:
+        print("Waiting to detect a face...")
         return
 
     # left = 0
