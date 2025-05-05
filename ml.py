@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cv2
+import time
 
 import dlib
 assert dlib.DLIB_USE_CUDA
