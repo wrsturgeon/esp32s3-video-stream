@@ -32,6 +32,8 @@ DISPLAY_FACE_BBOX = True
 DISPLAY_ALL_FACE_POINTS = False
 DISPLAY_RELEVANT_FACE_LINES = True
 
+NOSE_AXIS = None
+
 def show(im):
     cv2.imshow('Livestream', im)
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -51,6 +53,7 @@ def process(bgr):
     global DLIB_LANDMARK_PREDICTOR
     global FACE_BBOX
     global FACE_BBOX_LAST_UPDATE
+    global NOSE_AXIS
 
     height, width, channels = bgr.shape
 
@@ -113,11 +116,15 @@ def process(bgr):
     nose_top = landmarks.part(27)
     nose_base = landmarks.part(33)
 
-    nose_axis = nose_top - nose_base
-    standardized_face_size = mag(nose_axis)
-    eyebrow_raise_l = proj_onto_axis(eyebrow_left_center - nose_top, nose_axis)
-    eyebrow_raise_r = proj_onto_axis(eyebrow_right_center - nose_top, nose_axis)
-    mouth_open = proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis)
+    if NOSE_AXIS is None:
+        NOSE_AXIS = nose_top - nose_base
+    else:
+        NOSE_AXIS = 0.9 * NOSE_AXIS + 0.1 * (nose_top - nose_base)
+
+    standardized_face_size = mag(NOSE_AXIS)
+    eyebrow_raise_l = proj_onto_axis(eyebrow_left_center - nose_top, NOSE_AXIS)
+    eyebrow_raise_r = proj_onto_axis(eyebrow_right_center - nose_top, NOSE_AXIS)
+    mouth_open = proj_onto_axis(lip_upper_center - lip_lower_center, NOSE_AXIS)
 
     print()
     print(f"Standardized face size: {standardized_face_size}")
