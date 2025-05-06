@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import cv2
+import math
 import time
 
 import dlib
@@ -39,7 +40,7 @@ def show(im):
 def distance(a, b):
     dx = b.x - a.x
     dy = b.y - a.y
-    sqrt(dx * dx + dy * dy)
+    math.sqrt(dx * dx + dy * dy)
 
 def process(bgr):
     global DLIB_FACE_DETECTOR
