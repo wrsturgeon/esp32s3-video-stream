@@ -36,16 +36,16 @@ def show(im):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         exit(0)
 
-def process(im):
+def process(bgr):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
     global FACE_BBOX
     global FACE_BBOX_LAST_UPDATE
 
-    height, width, channels = im.shape
+    height, width, channels = bgr.shape
 
     # Convert to grayscale:
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    im = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
 
     update_face_bbox = (FACE_BBOX_LAST_UPDATE is None)
     if not update_face_bbox:
@@ -77,25 +77,23 @@ def process(im):
 
     multiplier = 1
     for _ in range(0, LOG_DISPLAY_UPSCALE):
-        im = cv2.pyrUp(im)
+        bgr = cv2.pyrUp(bgr)
         multiplier = 2 * multiplier
-
-    im = cv2.cvtColor(im, cv2.COLOR_GRAY2BGR)
 
     if DISPLAY_FACE_BBOX:
         x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
         w = (FACE_BBOX.right() * multiplier) - x
         color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
-        cv2.rectangle(im, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
-        cv2.putText(im, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
+        cv2.rectangle(bgr, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
+        cv2.putText(bgr, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
 
     if DISPLAY_ALL_FACE_POINTS:
         for i, point in enumerate(landmarks.parts()):
             x = point.x * multiplier
             y = point.y * multiplier
             m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
-            cv2.circle(im, (x, y), m, (255, 0, 0), -1)
-            cv2.putText(im, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
+            cv2.circle(bgr, (x, y), m, (255, 0, 0), -1)
+            cv2.putText(bgr, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
 
     eyebrow_left_center = landmarks.part(19)
     eyebrow_right_center = landmarks.part(24)
@@ -127,26 +125,26 @@ def process(im):
 
         nose_tip = landmarks.part(30)
 
-        cv2.line(im, (eyebrow_left_farleft.x * multiplier, eyebrow_left_farleft.y * multiplier), (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (eyebrow_left_right.x * multiplier, eyebrow_left_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_left_right.x * multiplier, eyebrow_left_right.y * multiplier), (eyebrow_left_farright.x * multiplier, eyebrow_left_farright.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_left_farleft.x * multiplier, eyebrow_left_farleft.y * multiplier), (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_left_left.x * multiplier, eyebrow_left_left.y * multiplier), (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_left_center.x * multiplier, eyebrow_left_center.y * multiplier), (eyebrow_left_right.x * multiplier, eyebrow_left_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_left_right.x * multiplier, eyebrow_left_right.y * multiplier), (eyebrow_left_farright.x * multiplier, eyebrow_left_farright.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
-        cv2.line(im, (eyebrow_right_farleft.x * multiplier, eyebrow_right_farleft.y * multiplier), (eyebrow_right_left.x * multiplier, eyebrow_right_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_right_left.x * multiplier, eyebrow_right_left.y * multiplier), (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (eyebrow_right_farright.x * multiplier, eyebrow_right_farright.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_right_farleft.x * multiplier, eyebrow_right_farleft.y * multiplier), (eyebrow_right_left.x * multiplier, eyebrow_right_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_right_left.x * multiplier, eyebrow_right_left.y * multiplier), (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_right_center.x * multiplier, eyebrow_right_center.y * multiplier), (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (eyebrow_right_right.x * multiplier, eyebrow_right_right.y * multiplier), (eyebrow_right_farright.x * multiplier, eyebrow_right_farright.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
-        cv2.line(im, (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_lower_left.x * multiplier, lip_lower_left.y * multiplier), (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_lower_center.x * multiplier, lip_lower_center.y * multiplier), (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_lower_right.x * multiplier, lip_lower_right.y * multiplier), (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (mouth_corner_right.x * multiplier, mouth_corner_right.y * multiplier), (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_upper_right.x * multiplier, lip_upper_right.y * multiplier), (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_upper_center.x * multiplier, lip_upper_center.y * multiplier), (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (lip_upper_left.x * multiplier, lip_upper_left.y * multiplier), (mouth_corner_left.x * multiplier, mouth_corner_left.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
-        cv2.line(im, (nose_top.x * multiplier, nose_top.y * multiplier), (nose_tip.x * multiplier, nose_tip.y * multiplier), (255, 0, 0), (w + 511) // 512)
-        cv2.line(im, (nose_tip.x * multiplier, nose_tip.y * multiplier), (nose_base.x * multiplier, nose_base.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (nose_top.x * multiplier, nose_top.y * multiplier), (nose_tip.x * multiplier, nose_tip.y * multiplier), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (nose_tip.x * multiplier, nose_tip.y * multiplier), (nose_base.x * multiplier, nose_base.y * multiplier), (255, 0, 0), (w + 511) // 512)
 
-    show(im)
+    show(bgr)
