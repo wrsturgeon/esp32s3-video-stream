@@ -22,7 +22,7 @@ DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 SCALE_UP_BEFORE_DETECTING_FACES = 0
-LOG_DISPLAY_UPSCALE = 0
+LOG_DISPLAY_UPSCALE = 2
 
 FACE_BBOX = None
 FACE_BBOX_LAST_UPDATE = None
@@ -37,10 +37,14 @@ def show(im):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         exit(0)
 
-def distance(a, b):
-    dx = b.x - a.x
-    dy = b.y - a.y
-    math.sqrt(dx * dx + dy * dy)
+def dot(a, b):
+    return a.x * b.x + a.y * b.y
+
+def mag(v):
+    return math.sqrt(dot(v, v))
+
+def proj_onto_axis(a, b):
+    return dot(a, b) / dot(b, b)
 
 def process(bgr):
     global DLIB_FACE_DETECTOR
@@ -109,10 +113,17 @@ def process(bgr):
     nose_top = landmarks.part(27)
     nose_base = landmarks.part(33)
 
-    standardized_face_size = distance(nose_top, nose_base)
+    nose_axis = nose_top - nose_base
+    standardized_face_size = mag(nose_axis)
+    eyebrow_raise_l = proj_onto_axis(eyebrow_left_center - nose_top, nose_axis)
+    eyebrow_raise_r = proj_onto_axis(eyebrow_right_center - nose_top, nose_axis)
+    mouth_open = proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis)
 
     print()
-    print("Standardized face size: {standardized_face_size}")
+    print(f"Standardized face size: {standardized_face_size}")
+    print(f"Eyebrow raise (L): {eyebrow_raise_l}")
+    print(f"Eyebrow raise (R): {eyebrow_raise_r}")
+    print(f"Mouth open: {mouth_open}")
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
