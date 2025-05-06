@@ -2,6 +2,7 @@
 
 # change frequency for changing the output and fixed pwm value.
 import i2cdev
+import math
 import numpy as np
 import time
 
@@ -27,7 +28,6 @@ he PRE_SCALE register can only be set when the SLEEP bit of MODE1 register is se
 freq_hz = 50 # Frequency of PWM 
 freq_hz = freq_hz * 0.9 # correction
 prescale = int(25000000.0/(4096.0*float(freq_hz))-1) # datasheet equation
-print("prescale = " , prescale )
 pwm.write(bytes([0x00, 0x10]))
 time.sleep(0.01)
 pwm.write(bytes([0xFE, prescale]))
@@ -62,3 +62,7 @@ def set_rotation(channel, unit_all_the_way_around):
     pwm.write(bytes([(LED0_OFF_L + 4 * channel), (quantized & 0xFF)]))
     pwm.write(bytes([(LED0_OFF_H + 4 * channel), (quantized >> 8)]))
     # time.sleep(0.01)
+
+while True:
+    x = 0.25 + 0.1 * math.sin(2. * time.time())
+    set_rotation(0, x)
