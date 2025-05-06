@@ -38,15 +38,13 @@ NOSE_BASE = None
 
 GRAPH_SIZE_CHARS = 100
 
-DECAY_EXTREMA = 0.001
-DONT_DECAY_EXTREMA = 1. - DECAY_EXTREMA
-EXPAND_EXTREMA = 10 * DECAY_EXTREMA
-BROW_L_EXTREMA = (0.25, 0.5)
-BROW_R_EXTREMA = (0.25, 0.5)
-MOUTH_EXTREMA = (0., 0.5)
-
-NARROW_RANGE = 0.1
-INV_NARROW = 1. - NARROW_RANGE
+DECAY_EXTREMES=0.999
+BROW_L_MIN = None
+BROW_L_MAX = None
+BROW_R_MIN = None
+BROW_R_MAX = None
+MOUTH_MIN = None
+MOUTH_MAX = None
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -66,36 +64,6 @@ def clamp_to_unit(x):
         return 1.
     return x
 
-def update_extrema(running, new_observation, name):
-    # if running is None:
-    #     return (new_observation, new_observation)
-    running_min, running_max = running
-    running_min, running_max = (
-        DONT_DECAY_EXTREMA * running_min + DECAY_EXTREMA * running_max,
-        DONT_DECAY_EXTREMA * running_max + DECAY_EXTREMA * running_min,
-    )
-    running_range = running_max - running_min
-    if running_range < 0.01:
-        running_range = 0.01
-    if new_observation < running_min:
-        new_running_min = running_min - EXPAND_EXTREMA * running_range
-        # print(f"Expanding running minimum of the {name} from {running_min} to {new_running_min}")
-        running_min = new_running_min
-    elif new_observation > running_max:
-        new_running_max = running_max + EXPAND_EXTREMA * running_range
-        # print(f"Expanding running maximum of the {name} from {running_max} to {new_running_max}")
-        running_max = new_running_max
-
-    return (running_min, running_max)
-
-def within_extrema(extrema, observation):
-    extreme_min, extreme_max = extrema
-    relative_min = INV_NARROW * extreme_min + NARROW_RANGE * extreme_max
-    relative_max = INV_NARROW * extreme_max + NARROW_RANGE * extreme_min
-    relative_range = relative_max - relative_min
-    if relative_range > 0.001:
-        return clamp_to_unit((observation - relative_min) / relative_range)
-
 GRAPH_TEXT_LENGTH = None
 def graph(name, value):
     global GRAPH_TEXT_LENGTH
@@ -106,16 +74,12 @@ def graph(name, value):
         for _ in range(strlen, GRAPH_TEXT_LENGTH):
             name = " " + name
 
-    # if value is None:
-    #     graph = "n/a"
-    # else:
     graph = ""
-    quantized = int(GRAPH_SIZE_CHARS * clamp_to_unit(value))
-    for _ in range(0, quantized):
+    quantized = int(GRAPH_SIZE_CHARS * clamp_to_unit(value)
+    for _ in range(0, quantized)):
         graph = graph + "%"
-    for _ in range(quantized, GRAPH_SIZE_CHARS):
+    for _ in range(quantized, GRAPH_SIZE_CHARS)):
         graph = graph + " "
-
     print(f"{name}: [{graph}] ({value})")
 
 def process(bgr):
@@ -125,16 +89,18 @@ def process(bgr):
     global FACE_BBOX_LAST_UPDATE
     global NOSE_TOP
     global NOSE_BASE
-    global BROW_L_EXTREMA
-    global BROW_R_EXTREMA
-    global MOUTH_EXTREMA
+    global BROW_L_MIN
+    global BROW_L_MAX
+    global BROW_R_MIN
+    global BROW_R_MAX
+    global MOUTH_MIN
+    global MOUTH_MAX
 
     height, width, channels = bgr.shape
 
     # Convert to grayscale:
     im = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
 
-    face_bbox_staleness = 1.
     update_face_bbox = (FACE_BBOX_LAST_UPDATE is None)
     if not update_face_bbox:
         face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
@@ -198,28 +164,22 @@ def process(bgr):
     standardized_face_size = np.linalg.norm(nose_axis)
     brow_l = proj_onto_axis(brow_left_right - NOSE_TOP, nose_axis)
     brow_r = proj_onto_axis(brow_right_left - NOSE_TOP, nose_axis)
-    mouth = proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis)
+    mouth_open = proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis)
 
-    if face_bbox_staleness < 1.:
-        BROW_L_EXTREMA = update_extrema(BROW_L_EXTREMA, brow_l, "left brow")
-        BROW_R_EXTREMA = update_extrema(BROW_R_EXTREMA, brow_r, "right brow")
-        MOUTH_EXTREMA = update_extrema(MOUTH_EXTREMA, mouth, "mouth")
+    BROW_L_MIN = brow_l if BROW_L_MIN is None or brow_l < BROW_L_MIN else DECAY_EXTREMES * BROW_L_MIN
+    BROW_L_MAX = brow_l if BROW_L_MAX is None or brow_l < BROW_L_MAX else DECAY_EXTREMES * BROW_L_MAX
+    BROW_R_MIN = brow_r if BROW_R_MIN is None or brow_r < BROW_R_MIN else DECAY_EXTREMES * BROW_R_MIN
+    BROW_R_MAX = brow_r if BROW_R_MAX is None or brow_r < BROW_R_MAX else DECAY_EXTREMES * BROW_R_MAX
+    MOUTH_MIN = mouth if MOUTH_MIN is None or mouth < MOUTH_MIN else DECAY_EXTREMES * MOUTH_MIN
+    MOUTH_MAX = mouth if MOUTH_MAX is None or mouth < MOUTH_MAX else DECAY_EXTREMES * MOUTH_MAX
 
-    brow_l = within_extrema(BROW_L_EXTREMA, brow_l)
-    brow_r = within_extrema(BROW_R_EXTREMA, brow_r)
-    mouth = within_extrema(MOUTH_EXTREMA, mouth)
+    brow_l = clamp_to_unit()
 
     print()
-    print(f"Brow raise (L) min: {BROW_L_EXTREMA[0]}")
-    print(f"Brow raise (L) max: {BROW_L_EXTREMA[1]}")
-    print(f"Brow raise (R) min: {BROW_R_EXTREMA[0]}")
-    print(f"Brow raise (R) max: {BROW_R_EXTREMA[1]}")
-    print(f"         Mouth min: {MOUTH_EXTREMA[0]}")
-    print(f"         Mouth max: {MOUTH_EXTREMA[1]}")
     print(f"Standardized face size: {standardized_face_size}")
     graph("Brow raise (L)", brow_l)
     graph("Brow raise (R)", brow_r)
-    graph("Mouth open", mouth)
+    graph("Mouth open", mouth_open)
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
