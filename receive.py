@@ -64,7 +64,7 @@ while True:
                 print(f"Invalid data size (expected <={CHUNK_SIZE} but found {data_len}) for chunk #{i}/{total_chunks} of frame #{frame_id}. Skipping.")
                 break
             jpeg_buffer[(CHUNK_SIZE * i):((CHUNK_SIZE * i) + data_len)] = data
-            print(f"Successfully received frame #{frame_id}!")
+            # print(f"Successfully received frame #{frame_id}!")
 
             arr = np.asarray(jpeg_buffer, dtype="uint8")
             im = cv2.imdecode(arr, cv2.IMREAD_COLOR)
