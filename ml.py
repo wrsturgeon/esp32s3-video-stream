@@ -36,6 +36,11 @@ def show(im):
     if cv2.waitKey(1) & 0xFF == ord('q'):
         exit(0)
 
+def distance(a, b):
+    dx = b.x - a.x
+    dy = b.y - a.y
+    sqrt(dx * dx + dy * dy)
+
 def process(bgr):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
@@ -102,6 +107,11 @@ def process(bgr):
     lip_upper_center = landmarks.part(62)
     nose_top = landmarks.part(27)
     nose_base = landmarks.part(33)
+
+    standardized_face_size = distance(nose_top, nose_base)
+
+    print()
+    print("Standardized face size: {standardized_face_size}")
 
     if DISPLAY_RELEVANT_FACE_LINES:
 
