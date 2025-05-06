@@ -1,6 +1,26 @@
 #!/usr/bin/env python3
 
+print("Importing Adafruit's PCA9685 servo library...")
 from adafruit_servokit import ServoKit
 
+print("Initializing the PCA9685 to work with servos...")
 pca9685 = ServoKit(channels=16)
-pca9685.servo[0].angle = 90
+
+def move(i, angle):
+    print("Sending servo #{i} to {angle} degrees...")
+    pca9685.servo[i].angle = angle
+
+move(0, 90)
+
+t = time.time()
+while True:
+
+    t += 1
+    while time.time() < t:
+        pass
+    move(0, 85)
+
+    t += 1
+    while time.time() < t:
+        pass
+    move(0, 95)
