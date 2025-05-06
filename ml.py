@@ -52,7 +52,6 @@ def process(bgr):
         face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
         if face_bbox_staleness >= 1.:
             update_face_bbox = True
-            face_bbox_staleness = 1.
 
     if update_face_bbox:
         face_bbox_updated = False
@@ -83,6 +82,8 @@ def process(bgr):
     if DISPLAY_FACE_BBOX:
         x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
         w = (FACE_BBOX.right() * multiplier) - x
+        if face_bbox_staleness > 1.:
+            face_bbox_staleness = 1.
         color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
         cv2.rectangle(bgr, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
         cv2.putText(bgr, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
