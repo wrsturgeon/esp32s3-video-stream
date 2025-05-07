@@ -3,6 +3,7 @@
 import cv2
 import math
 import numpy as np
+import pwm
 import time
 
 import dlib
@@ -23,7 +24,7 @@ DLIB_FACE_DETECTOR = dlib.get_frontal_face_detector()
 DLIB_LANDMARK_PREDICTOR = dlib.shape_predictor(DLIB_LANDMARK_PREDICTOR_PATH)
 
 SCALE_UP_BEFORE_DETECTING_FACES = 0
-LOG_DISPLAY_UPSCALE = 2
+LOG_DISPLAY_UPSCALE = 0
 
 FACE_BBOX = None
 FACE_BBOX_LAST_UPDATE = None
@@ -47,6 +48,11 @@ MOUTH_EXTREMA = (0., 0.5)
 
 NARROW_RANGE = 0.1
 INV_NARROW = 1. - NARROW_RANGE
+
+def send_to_servos(brow_l, brow_r, mouth):
+    pwm.set_rotation(0, 0.25 + 0.25 * brow_l)
+    pwm.set_rotation(1, 0.75 - 0.25 * brow_r)
+    pwm.set_rotation(2, 0.25 - 0.25 * mouth)
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -134,7 +140,7 @@ def process(bgr):
     # Convert to grayscale:
     im = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
 
-    face_bbox_staleness = 1.
+    face_bbox_staleness = 42. # a lot
     update_face_bbox = (FACE_BBOX_LAST_UPDATE is None)
     if not update_face_bbox:
         face_bbox_staleness = (time.time() - FACE_BBOX_LAST_UPDATE) / FACE_BBOX_UPDATE_PERIOD_SECONDS
@@ -150,6 +156,8 @@ def process(bgr):
 
         if FACE_BBOX is None:
             print("Waiting to detect a face...")
+            show(bgr)
+            send_to_servos(0.5, 0.5, 0.5)
             return
 
         if face_bbox_updated:
@@ -161,28 +169,6 @@ def process(bgr):
                 face_bbox_staleness = face_bbox_staleness - 1.
 
     landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
-
-    multiplier = 1
-    for _ in range(0, LOG_DISPLAY_UPSCALE):
-        bgr = cv2.pyrUp(bgr)
-        multiplier = 2 * multiplier
-
-    if DISPLAY_FACE_BBOX:
-        x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
-        w = (FACE_BBOX.right() * multiplier) - x
-        if face_bbox_staleness > 1.:
-            face_bbox_staleness = 1.
-        color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
-        cv2.rectangle(bgr, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
-        cv2.putText(bgr, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
-
-    if DISPLAY_ALL_FACE_POINTS:
-        for i, point in enumerate(landmarks.parts()):
-            x = point.x * multiplier
-            y = point.y * multiplier
-            m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
-            cv2.circle(bgr, (x, y), m, (255, 0, 0), -1)
-            cv2.putText(bgr, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
 
     brow_left_right = point2np(landmarks.part(20))
     brow_right_left = point2np(landmarks.part(23))
@@ -209,17 +195,42 @@ def process(bgr):
     brow_r = within_extrema(BROW_R_EXTREMA, brow_r)
     mouth = within_extrema(MOUTH_EXTREMA, mouth)
 
-    print()
-    print(f"Brow raise (L) min: {BROW_L_EXTREMA[0]}")
-    print(f"Brow raise (L) max: {BROW_L_EXTREMA[1]}")
-    print(f"Brow raise (R) min: {BROW_R_EXTREMA[0]}")
-    print(f"Brow raise (R) max: {BROW_R_EXTREMA[1]}")
-    print(f"         Mouth min: {MOUTH_EXTREMA[0]}")
-    print(f"         Mouth max: {MOUTH_EXTREMA[1]}")
-    print(f"Standardized face size: {standardized_face_size}")
-    graph("Brow raise (L)", brow_l)
-    graph("Brow raise (R)", brow_r)
-    graph("Mouth open", mouth)
+    if face_bbox_staleness < 2.:
+        send_to_servos(brow_l, brow_r, mouth)
+
+    # print()
+    # print(f"Brow raise (L) min: {BROW_L_EXTREMA[0]}")
+    # print(f"Brow raise (L) max: {BROW_L_EXTREMA[1]}")
+    # print(f"Brow raise (R) min: {BROW_R_EXTREMA[0]}")
+    # print(f"Brow raise (R) max: {BROW_R_EXTREMA[1]}")
+    # print(f"         Mouth min: {MOUTH_EXTREMA[0]}")
+    # print(f"         Mouth max: {MOUTH_EXTREMA[1]}")
+    # print(f"Standardized face size: {standardized_face_size}")
+    # graph("Brow raise (L)", brow_l)
+    # graph("Brow raise (R)", brow_r)
+    # graph("Mouth open", mouth)
+
+    multiplier = 1
+    for _ in range(0, LOG_DISPLAY_UPSCALE):
+        bgr = cv2.pyrUp(bgr)
+        multiplier = 2 * multiplier
+
+    if DISPLAY_FACE_BBOX:
+        x, y = FACE_BBOX.left() * multiplier, FACE_BBOX.top() * multiplier
+        w = (FACE_BBOX.right() * multiplier) - x
+        if face_bbox_staleness > 1.:
+            face_bbox_staleness = 1.
+        color = (0, int(255. * (1. - face_bbox_staleness)), int(255. * face_bbox_staleness))
+        cv2.rectangle(bgr, (x, y), (FACE_BBOX.right() * multiplier, FACE_BBOX.bottom() * multiplier), color, (w + 511) // 512)
+        cv2.putText(bgr, "Face", (x, y - ((w + 127) // 128)), cv2.FONT_HERSHEY_SIMPLEX, w / 512., color, (w + 511) // 512)
+
+    if DISPLAY_ALL_FACE_POINTS:
+        for i, point in enumerate(landmarks.parts()):
+            x = point.x * multiplier
+            y = point.y * multiplier
+            m = (multiplier + 1) // 2 # `+ 1` just so this is not 0 when m = 1
+            cv2.circle(bgr, (x, y), m, (255, 0, 0), -1)
+            cv2.putText(bgr, f"{i}", (x, y - m), cv2.FONT_HERSHEY_SIMPLEX, w / 1024., (0, 255, 0), (w + 1023) // 1024)
 
     if DISPLAY_RELEVANT_FACE_LINES:
 

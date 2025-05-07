@@ -63,6 +63,6 @@ def set_rotation(channel, unit_all_the_way_around):
     pwm.write(bytes([(LED0_OFF_H + 4 * channel), (quantized >> 8)]))
     # time.sleep(0.01)
 
-while True:
-    x = 0.25 + 0.1 * math.sin(2. * time.time())
-    set_rotation(0, x)
+# while True:
+#     x = 0.25 + 0.1 * math.sin(2. * time.time())
+#     set_rotation(0, x)

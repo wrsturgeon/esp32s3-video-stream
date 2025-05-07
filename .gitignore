@@ -1,8 +1,11 @@
+**.bz2
+**.dat
 **.lock
-**/sdkconfig
 
+**/__pycache__
 **/.DS_Store
 **/.direnv
 **/build
 **/managed*
 **/result
+**/sdkconfig
