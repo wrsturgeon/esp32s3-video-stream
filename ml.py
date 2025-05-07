@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import cv2
-from filterpy.kalman import KalmanFilter
 import math
 import numpy as np
 import pwm
@@ -46,13 +45,16 @@ EXTREMA_BROW_L = (0.25, 0.5)
 EXTREMA_BROW_R = (0.25, 0.5)
 EXTREMA_MOUTH = (0., 0.5)
 
+NOSE_TOP = None
+NOSE_BASE = None
+
 NARROW_RANGE = 0.1
 INV_NARROW = 1. - NARROW_RANGE
 
 def send_to_servos(brow_l, brow_r, mouth):
-    pwm.set_rotation(0, 0.25 + 0.25 * brow_l)
-    pwm.set_rotation(1, 0.75 - 0.25 * brow_r)
-    pwm.set_rotation(2, 0.25 - 0.25 * mouth)
+    pwm.set_rotation(0, 0.40 + 0.40 * brow_l)
+    pwm.set_rotation(1, 0.60 - 0.40 * brow_r)
+    pwm.set_rotation(2, 0.40 - 0.40 * mouth)
 
 def show(im):
     cv2.imshow('Livestream', im)
@@ -124,43 +126,6 @@ def graph(name, value):
 
     print(f"{name}: [{graph}] ({value})")
 
-def kalman_init():
-    kf = KalmanFilter(dim_x=4, dim_z=2) # [x, y, vx, vy]
-    dt = 1.0 / FPS
-
-    # State transition matrix
-    kf.F = np.array([
-        [1,  0,  dt, 0 ],
-        [0,  1,  0,  dt],
-        [0,  0,  1,  0 ],
-        [0,  0,  0,  1 ]
-    ])
-
-    # Measurement function: we only observe position (x, y)
-    kf.H = np.array([
-        [1, 0, 0, 0],
-        [0, 1, 0, 0]
-    ])
-
-    kf.R *= 32.0 # 5.0   # Measurement noise: increase if jitter remains
-    kf.P *= 10.0  # Initial estimate uncertainty
-    kf.Q *= 16.0 # 0.01  # Process noise (tune for smoothness vs. reactivity): decrease if lags behind motion
-
-    return kf
-
-KALMAN_NOSE_TOP = kalman_init()
-KALMAN_NOSE_BASE = kalman_init()
-KALMAN_BROW_L = kalman_init()
-KALMAN_BROW_R = kalman_init()
-KALMAN_LIP_LOWER = kalman_init()
-KALMAN_LIP_UPPER = kalman_init()
-
-def kalman_update(kalman, observation):
-    print()
-    kalman.predict()
-    kalman.update(observation)
-    return kalman.x[:2, 0]
-
 def process(bgr):
     global DLIB_FACE_DETECTOR
     global DLIB_LANDMARK_PREDICTOR
@@ -169,12 +134,8 @@ def process(bgr):
     global EXTREMA_BROW_L
     global EXTREMA_BROW_R
     global EXTREMA_MOUTH
-    global KALMAN_NOSE_TOP
-    global KALMAN_NOSE_BASE
-    global KALMAN_BROW_L
-    global KALMAN_BROW_R
-    global KALMAN_LIP_LOWER
-    global KALMAN_LIP_UPPER
+    global NOSE_TOP
+    global NOSE_BASE
 
     height, width, channels = bgr.shape
     print(bgr.shape)
@@ -212,18 +173,41 @@ def process(bgr):
 
     landmarks = DLIB_LANDMARK_PREDICTOR(im, FACE_BBOX)
 
-    nose_top = kalman_update(KALMAN_NOSE_TOP, point2np(landmarks.part(27)))
-    nose_base = kalman_update(KALMAN_NOSE_BASE, point2np(landmarks.part(33)))
-    brow_left_right = kalman_update(KALMAN_BROW_L, point2np(landmarks.part(20)))
-    brow_right_left = kalman_update(KALMAN_BROW_R, point2np(landmarks.part(23)))
-    lip_lower_center = kalman_update(KALMAN_LIP_LOWER, point2np(landmarks.part(66)))
-    lip_upper_center = kalman_update(KALMAN_LIP_UPPER, point2np(landmarks.part(62)))
+    nose_top = point2np(landmarks.part(27))
+    nose_base = point2np(landmarks.part(33))
+    NOSE_TOP = nose_top if NOSE_TOP is None else (0.9 * NOSE_TOP + 0.1 * nose_top)
+    NOSE_BASE = nose_base if NOSE_BASE is None else (0.9 * NOSE_BASE + 0.1 * nose_base)
 
-    nose_axis = nose_top - nose_base
+    brow_left_left = point2np(landmarks.part(18))
+    brow_left_center = point2np(landmarks.part(19))
+    brow_left_right = point2np(landmarks.part(20))
+
+    brow_right_left = point2np(landmarks.part(23))
+    brow_right_center = point2np(landmarks.part(24))
+    brow_right_right = point2np(landmarks.part(25))
+
+    lip_lower_left = point2np(landmarks.part(67))
+    lip_lower_center = point2np(landmarks.part(66))
+    lip_lower_right = point2np(landmarks.part(65))
+
+    lip_upper_left = point2np(landmarks.part(61))
+    lip_upper_center = point2np(landmarks.part(62))
+    lip_upper_right = point2np(landmarks.part(63))
+
+    nose_axis = NOSE_TOP - NOSE_BASE
     standardized_face_size = np.linalg.norm(nose_axis)
-    brow_l = proj_onto_axis(brow_left_right - nose_top, nose_axis)
-    brow_r = proj_onto_axis(brow_right_left - nose_top, nose_axis)
-    mouth = proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis)
+    brow_l = (
+        proj_onto_axis(brow_left_left - NOSE_TOP, nose_axis) +
+        proj_onto_axis(brow_left_center - NOSE_TOP, nose_axis) +
+        proj_onto_axis(brow_left_right - NOSE_TOP, nose_axis)) / 3.0
+    brow_r = (
+        proj_onto_axis(brow_right_left - NOSE_TOP, nose_axis) +
+        proj_onto_axis(brow_right_center - NOSE_TOP, nose_axis) +
+        proj_onto_axis(brow_right_right - NOSE_TOP, nose_axis)) / 3.0
+    mouth = (
+        proj_onto_axis(lip_upper_left - lip_lower_left, nose_axis) +
+        proj_onto_axis(lip_upper_center - lip_lower_center, nose_axis) +
+        proj_onto_axis(lip_upper_right - lip_lower_right, nose_axis)) / 3.0
 
     if face_bbox_staleness < 1.:
         EXTREMA_BROW_L = update_extrema(EXTREMA_BROW_L, brow_l, "left brow")
@@ -236,6 +220,8 @@ def process(bgr):
 
     if face_bbox_staleness < 2.:
         send_to_servos(brow_l, brow_r, mouth)
+    else:
+        send_to_servos(0.5, 0.5, 0.5)
 
     print()
     # print(f"Brow raise (L) min: {EXTREMA_BROW_L[0]}")
@@ -274,23 +260,13 @@ def process(bgr):
     if DISPLAY_RELEVANT_FACE_LINES:
 
         brow_left_farleft = point2np(landmarks.part(17))
-        brow_left_left = point2np(landmarks.part(18))
-        brow_left_center = point2np(landmarks.part(19))
         brow_left_farright = point2np(landmarks.part(21))
 
         brow_right_farleft = point2np(landmarks.part(22))
-        brow_right_center = point2np(landmarks.part(24))
-        brow_right_right = point2np(landmarks.part(25))
         brow_right_farright = point2np(landmarks.part(26))
-
-        lip_lower_left = point2np(landmarks.part(67))
-        lip_lower_right = point2np(landmarks.part(65))
 
         mouth_corner_left = point2np(landmarks.part(60))
         mouth_corner_right = point2np(landmarks.part(64))
-
-        lip_upper_left = point2np(landmarks.part(61))
-        lip_upper_right = point2np(landmarks.part(63))
 
         nose_tip = point2np(landmarks.part(30))
 
@@ -313,10 +289,10 @@ def process(bgr):
         cv2.line(bgr, (int(lip_upper_center[0] * multiplier), int(lip_upper_center[1] * multiplier)), (int(lip_upper_left[0] * multiplier), int(lip_upper_left[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
         cv2.line(bgr, (int(lip_upper_left[0] * multiplier), int(lip_upper_left[1] * multiplier)), (int(mouth_corner_left[0] * multiplier), int(mouth_corner_left[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
 
-        # cv2.line(bgr, (int(nose_top[0] * multiplier), int(nose_top[1] * multiplier)), (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
-        # cv2.line(bgr, (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (int(nose_base[0] * multiplier), int(nose_base[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
+        # cv2.line(bgr, (int(NOSE_TOP[0] * multiplier), int(NOSE_TOP[1] * multiplier)), (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
+        # cv2.line(bgr, (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (int(NOSE_BASE[0] * multiplier), int(NOSE_BASE[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
 
-        cv2.line(bgr, (int(nose_top[0] * multiplier), int(nose_top[1] * multiplier)), (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
-        cv2.line(bgr, (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (int(nose_base[0] * multiplier), int(nose_base[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (int(NOSE_TOP[0] * multiplier), int(NOSE_TOP[1] * multiplier)), (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
+        cv2.line(bgr, (int(nose_tip[0] * multiplier), int(nose_tip[1] * multiplier)), (int(NOSE_BASE[0] * multiplier), int(NOSE_BASE[1] * multiplier)), (255, 0, 0), (w + 511) // 512)
 
     show(bgr)
